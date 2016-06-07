@@ -53,11 +53,21 @@ class ChatWS(AbsView):
 
     async def check_receiver(self, receiver: ObjectId):
         client = Client(
-            pk="%s" % receiver
+            pk=ObjectId(receiver)
         )
 
         if not await client.get():
             raise ClientNotFound
+
+        client_in_chat = ClientsInChatRoom()
+
+        q = {
+            'chat': self.chat_pk,
+            'client': ObjectId(receiver)
+        }
+
+        if not await client_in_chat.objects.find_one(q):
+            raise ClientNotFoundInChat
 
     async def prepare_msg(self):
         while True:

@@ -25,6 +25,11 @@ class ClientNotFound(Exception):
         return "client not found"
 
 
+class ClientNotFoundInChat(Exception):
+    def __str__(self):
+        return "client not found in chat"
+
+
 class ChatNotFound(Exception):
     def __str__(self):
         return "Chat not found via enter PK"
