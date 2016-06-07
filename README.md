@@ -1,5 +1,7 @@
 # vispa-chat
 
+Сервер для чатиков на базе asyncio & mongodb
+
 
 Chat/Auth 8080 port
 -----------------------------
