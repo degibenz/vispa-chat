@@ -3,11 +3,7 @@ from __future__ import unicode_literals, absolute_import
 # -*- coding: utf-8 -*-
 __author__ = 'degibenz'
 
-import logging
-
-log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-
+from aiohttp.log import *
 from bson.objectid import ObjectId
 from configs.db import DB
 
@@ -43,7 +39,7 @@ class Model(object):
                 'error': '%s' % error
             }
 
-            log.error("%s" % self.result)
+            access_logger.error("%s" % self.result)
 
         finally:
             return self.result
@@ -62,7 +58,7 @@ class Model(object):
                 'error': '%s' % error
             }
 
-            log.error("%s" % self.result)
+            access_logger.error("%s" % self.result)
 
         finally:
             return self.result

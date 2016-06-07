@@ -2,6 +2,7 @@ from __future__ import unicode_literals, absolute_import
 
 # -*- coding: utf-8 -*-
 __author__ = 'degibenz'
+from aiohttp.log import *
 
 from core.middleware import check_auth
 from core.api import AbsView, json_response
@@ -15,7 +16,6 @@ __all__ = [
 
 
 class GetChat(AbsView):
-
     @check_auth
     async def get(self):
         try:
@@ -30,19 +30,24 @@ class GetChat(AbsView):
                 'author': "%s" % chat_info.get('author')
             }
 
+            access_logger.log("%s" % self.response)
+
         except(Exception,) as error:
             self.response = {
                 'status': False,
                 'error': '%s' % error
             }
+
+            access_logger.error("%s" % self.response)
+
         finally:
+
             return json_response(
                 self.response
             )
 
 
 class GetChatList(AbsView):
-
     @check_auth
     async def get(self):
         try:
@@ -58,6 +63,9 @@ class GetChatList(AbsView):
                 'status': False,
                 'error': '%s' % error
             }
+
+            server_logger.error("%s" % self.response)
+
         finally:
             return json_response(
                 self.response
@@ -65,7 +73,6 @@ class GetChatList(AbsView):
 
 
 class CreateChat(AbsView):
-
     @check_auth
     async def post(self):
         try:
@@ -84,9 +91,10 @@ class CreateChat(AbsView):
                 'status': False,
                 'error': '%s' % error
             }
+
+            server_logger.error("%s" % self.response)
+
         finally:
             return json_response(
                 self.response
             )
-
-

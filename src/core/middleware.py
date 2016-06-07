@@ -3,10 +3,7 @@ from __future__ import unicode_literals, absolute_import
 # -*- coding: utf-8 -*-
 __author__ = 'degibenz'
 
-import logging
-
-log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
+from aiohttp.log import *
 
 from functools import wraps
 
@@ -52,7 +49,7 @@ def check_auth(func):
                         return await func(request, *args, **kwargs)
 
                 except(Exception,) as error:
-                    log.error("%s" % error)
+                    access_logger.error("%s" % error)
 
                     return json_response({
                         'status': False,
@@ -60,7 +57,7 @@ def check_auth(func):
                     })
 
             except(Exception,) as error:
-                log.error("%s" % error)
+                access_logger.error("%s" % error)
 
                 return json_response({
                     'status': False,

@@ -3,11 +3,6 @@ from __future__ import unicode_literals, absolute_import
 # -*- coding: utf-8 -*-
 __author__ = 'degibenz'
 
-import logging
-
-log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-
 import asyncio
 from aiohttp import web
 
@@ -29,9 +24,7 @@ async def init(loop):
     app.router.add_route('POST', '/chat/create/', CreateChat)
 
     srv = await loop.create_server(
-        app.make_handler(
-            # access_log='%a %l %u %t "%r" %s %b"'
-        ),
+        app.make_handler(),
         '0.0.0.0',
         8080
     )

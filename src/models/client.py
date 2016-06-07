@@ -4,10 +4,7 @@ from __future__ import unicode_literals, absolute_import
 
 __author__ = 'degibenz'
 
-import logging
-
-log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
+from aiohttp.log import *
 
 import datetime
 from core.model import Model, ObjectId
@@ -47,7 +44,7 @@ class Client(Model):
                 key = "%s" % search_key.get('token')
 
         except(Exception,) as error:
-            log.error("%s" % error)
+            access_logger.error("%s" % error)
 
         finally:
             return key
