@@ -29,33 +29,42 @@ def check_auth(func):
         if token_in_header:
             token = Token()
 
-            token_is = await token.db.objects.find_one({
-                'token': token_in_header
-            })
-
             try:
+                token_is = await token.objects.find_one({
+                    'token': token_in_header
+                })
 
-                if not token_is:
-                    raise TokenIsNotFound
+                try:
 
-                else:
-                    client = Client(
-                        pk=token_is.get('client')
-                    )
+                    if not token_is:
+                        raise TokenIsNotFound
 
-                    request._request.client = await client.get()
+                    else:
+                        client = Client(
+                            pk=token_is.get('client')
+                        )
 
-                    if not client:
-                        raise ClientNotFoundViaToken
+                        request._request.client = await client.get()
 
-                    return await func(request, *args, **kwargs)
+                        if not client:
+                            raise ClientNotFoundViaToken
+
+                        return await func(request, *args, **kwargs)
+
+                except(Exception,) as error:
+                    log.error("%s" % error)
+
+                    return json_response({
+                        'status': False,
+                        'error': 'token not correct'
+                    })
 
             except(Exception,) as error:
                 log.error("%s" % error)
 
                 return json_response({
                     'status': False,
-                    'error': 'token not correct'
+                    'error': '%s' % error
                 })
 
     return wrapper

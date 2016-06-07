@@ -29,7 +29,12 @@ async def init(loop):
     app.router.add_route('POST', '/chat/create/', CreateChat)
 
     srv = await loop.create_server(
-        app.make_handler(), '0.0.0.0', 8080)
+        app.make_handler(
+            # access_log='%a %l %u %t "%r" %s %b"'
+        ),
+        '0.0.0.0',
+        8080
+    )
     return srv
 
 

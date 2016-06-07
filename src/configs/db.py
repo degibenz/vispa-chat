@@ -22,6 +22,8 @@ class DB(object):
         if self.db:
             pass
         else:
-            self.db = ma.AsyncIOMotorClient('%s:%s' % (MONGODB_SERVER_HOST, MONGODB_SERVER_PORT))
+            self.db = ma.AsyncIOMotorClient(
+                '%s:%s' % (MONGODB_SERVER_HOST, MONGODB_SERVER_PORT)
+            )
 
-        return self.db
+        return self.db['async-chat']

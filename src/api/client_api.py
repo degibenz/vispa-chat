@@ -54,7 +54,9 @@ class CreateClient(AbsView):
 
         client = Client()
 
-        client_exit = await client.objects.find_one({"email": email})
+        client_exit = await client.db["%s" % client.collection].find_one(
+            {"email": email}
+        )
 
         if not client_exit:
             client_object = await client.save(

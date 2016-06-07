@@ -2,11 +2,11 @@ mongodb:
   image: mongo:3.2
   container_name: chat-mongodb
   expose:
-    - "27017"
+    - "27017:27017"
 
 auth:
   build: .
-  command: python /home/chat/webserver.py
+  command: python3 /home/chat/webserver.py
   container_name: auth-service
   volumes:
     - ./src/:/home/chat/
@@ -20,7 +20,7 @@ auth:
 
 websocket:
   build: .
-  command: python /home/chat/ws_server.py
+  command: python3 /home/chat/ws_server.py
   container_name: ws-service
   volumes:
     - ./src/:/home/chat/
