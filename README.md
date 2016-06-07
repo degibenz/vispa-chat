@@ -41,6 +41,15 @@ GET /chat/{chat_uid}/{client_uid}/ - адрес для подключения к
   ``` python  
   {
     'msg' : 'Hello',
-    'receiver' : '4235sdfq'
+    'receiver' : '4235sdfq' # индификатор другого клиента
   }
   ```
+  
+- В случае возникновения какой-либо ошибки клиент получит сообщение след, вида
+
+   ``` python  
+   {
+    'status' : False,
+    'error' : 'error description'
+   }
+   ```
