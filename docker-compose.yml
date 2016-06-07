@@ -1,5 +1,34 @@
 mongodb:
   image: mongo:3.2
   container_name: chat-mongodb
+  host_name: chat-mongodb
   expose:
     - "27017"
+
+auth:
+  build: .
+  command: python /home/chat/webserver.py
+  container_name: auth-service
+  volumes:
+    - ./src/:/home/chat/
+  links:
+    - chat-mongodb
+  expose:
+    - "8080"
+  environment:
+    MONGODB_SERVER_HOST: 'chat-mongodb'
+    MONGODB_SERVER_PORT : "27017"
+
+websocket:
+  build: .
+  command: python /home/chat/ws_server.py
+  container_name: ws-service
+  volumes:
+    - ./src/:/home/chat/
+  links:
+    - chat-mongodb
+  expose:
+    - "8080"
+  environment:
+    MONGODB_SERVER_HOST: 'chat-mongodb'
+    MONGODB_SERVER_PORT : "27017"
