@@ -49,7 +49,7 @@ GET /chat/{chat_uid}/{client_uid}/ - адрес для подключения к
 
    ``` python  
    {
-    'status' : False,
-    'error' : 'error description'
+     'status' : False,
+     'error' : 'error description'
    }
    ```
