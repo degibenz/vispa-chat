@@ -184,9 +184,9 @@ class ChatWS(AbsView):
         for item in self.agents:
             if for_me:
                 if item.get('chat_uid') == self.chat_pk and item.get('client_uid') == self.client_pk:
-                    _del_it()
+                    await _del_it()
             else:
-                _del_it()
+                await _del_it()
 
     async def get(self):
         try:
