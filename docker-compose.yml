@@ -1,7 +1,6 @@
 mongodb:
   image: mongo:3.2
   container_name: chat-mongodb
-  host_name: chat-mongodb
   expose:
     - "27017"
 
@@ -12,7 +11,7 @@ auth:
   volumes:
     - ./src/:/home/chat/
   links:
-    - chat-mongodb
+    - mongodb
   expose:
     - "8080"
   environment:
@@ -26,7 +25,7 @@ websocket:
   volumes:
     - ./src/:/home/chat/
   links:
-    - chat-mongodb
+    - mongodb
   expose:
     - "8080"
   environment:

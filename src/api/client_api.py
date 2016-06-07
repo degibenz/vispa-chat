@@ -21,7 +21,6 @@ class ClientInfo(AbsView):
     @check_auth
     async def get(self):
         client = Client(
-            db=self.request.db,
             pk=self.request.match_info.get('id')
         )
 
@@ -53,9 +52,9 @@ class CreateClient(AbsView):
             'password': password
         }
 
-        client = Client(db=self.request.db)
+        client = Client()
 
-        client_exit = await client.db["%s" % client.collection].find_one({"email": email})
+        client_exit = await client.objects.find_one({"email": email})
 
         if not client_exit:
             client_object = await client.save(
@@ -82,11 +81,9 @@ class AuthClient(AbsView):
         email = data.get('email')
         password = data.get('password')
 
-        client = Client(
-            db=self.request.db
-        )
+        client = Client()
 
-        client_exit = await client.db["%s" % client.collection].find_one(
+        client_exit = await client.objects.find_one(
             {
                 "email": email,
                 "password": password
@@ -96,11 +93,10 @@ class AuthClient(AbsView):
         if client_exit:
 
             token = Token(
-                db=self.request.db,
                 client_uid=client_exit.get('_id')
             )
 
-            token_exist = await token.db["%s" % token.collection].find_one(
+            token_exist = await token.objects.find_one(
                 {
                     "client": ObjectId(token.client_uid)
                 }

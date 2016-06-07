@@ -22,7 +22,7 @@ from core.model import ObjectId
 from models.chat import *
 from models.client import Token, Client
 
-from ..exceptions import *
+from core.exceptions import *
 
 __all__ = [
     'ChatWS'

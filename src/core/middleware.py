@@ -12,7 +12,8 @@ from functools import wraps
 
 from models.client import Token, Client
 from core.api import json_response
-from ..exceptions import *
+
+from core.exceptions import *
 
 __all__ = [
     'check_auth',
