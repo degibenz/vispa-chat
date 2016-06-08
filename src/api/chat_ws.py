@@ -236,10 +236,11 @@ class ChatWS(AbsView):
             }
 
             log.error("%s" % self.response)
+
             data = {
                 'client_uid': self.client_pk
             }
-            self.notify(item=data, message="%s" % error)
-        finally:
+            await self.notify(item=data, message="%s" % self.response)
 
+        finally:
             return self.ws
