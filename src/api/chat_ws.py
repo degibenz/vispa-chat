@@ -28,6 +28,16 @@ __all__ = [
     'ChatWS'
 ]
 
+loop = asyncio.get_event_loop()
+
+# TODO было бы хорошо, сделать тут полноценное удержание соединения
+database = DB(loop=loop)
+
+
+def init_model():
+    connection = database.hold_connect()
+    return connection
+
 
 class ChatWS(AbsView):
     ws = None
@@ -43,8 +53,7 @@ class ChatWS(AbsView):
     db = None
 
     def __init__(self, request):
-        database = DB()
-        self.db = database.connect
+        self.db = init_model()
 
         self.chat_pk = ObjectId(request.match_info.get('id'))
         self.client_pk = ObjectId(request.match_info.get('client'))
