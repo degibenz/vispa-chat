@@ -160,7 +160,6 @@ class ChatWS(AbsView):
         except(Exception,) as error:
             log.error("%s" % error)
 
-
     async def notify(self, item: dict, message: str, receiver=None):
 
         async def _notify():
@@ -207,12 +206,12 @@ class ChatWS(AbsView):
 
             self.chat = await chat.get()
 
-            if not self.chat:
-                raise ChatNotFound
-
             self.ws = web.WebSocketResponse()
 
             await self.ws.prepare(self.request)
+
+            if not self.chat:
+                raise ChatNotFound
 
             await self.cache_ws()
 
