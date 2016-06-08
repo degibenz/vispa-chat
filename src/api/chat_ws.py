@@ -240,6 +240,7 @@ class ChatWS(AbsView):
                 'client_uid': self.client_pk,
                 'socket': self.ws
             }
+
             await self.notify(item=data, message="%s" % self.response)
             await self.close_chat()
 
