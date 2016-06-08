@@ -210,9 +210,6 @@ class ChatWS(AbsView):
 
             await self.ws.prepare(self.request)
 
-            if not self.chat:
-                raise ChatNotFound
-
             await self.cache_ws()
 
             self.agents.append(
@@ -222,6 +219,9 @@ class ChatWS(AbsView):
                     "socket": self.ws
                 }
             )
+
+            if not self.chat:
+                raise ChatNotFound
 
             await asyncio.gather(self.prepare_msg())
 
