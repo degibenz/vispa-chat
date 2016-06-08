@@ -1,7 +1,9 @@
 from __future__ import unicode_literals, absolute_import
 
 # -*- coding: utf-8 -*-
+
 __author__ = 'degibenz'
+
 from aiohttp.log import *
 
 from core.middleware import check_auth

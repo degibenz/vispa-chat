@@ -16,7 +16,9 @@ auth:
     - "8080:8080"
   environment:
     MONGODB_SERVER_HOST: 'chat-mongodb'
-    MONGODB_SERVER_PORT : "27017"
+    MONGODB_SERVER_PORT : '27017'
+    MONGODB_DB_NAME : 'async-chat'
+
 
 websocket:
   build: .
@@ -30,4 +32,5 @@ websocket:
     - "8090:8090"
   environment:
     MONGODB_SERVER_HOST: 'chat-mongodb'
-    MONGODB_SERVER_PORT : "27017"
+    MONGODB_SERVER_PORT : '27017'
+    MONGODB_DB_NAME : 'async-chat'

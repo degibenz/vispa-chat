@@ -3,14 +3,27 @@ from __future__ import unicode_literals, absolute_import
 # -*- coding: utf-8 -*-
 __author__ = 'degibenz'
 
+import asyncio
+
 from aiohttp.log import *
 from bson.objectid import ObjectId
+
 from configs.db import DB
 
 __all__ = [
     'Model',
     'ObjectId'
 ]
+
+loop = asyncio.get_event_loop()
+
+# TODO было бы хорошо, сделать тут полноценное удержание соединения
+database = DB(loop=loop)
+
+
+def init_model():
+    connection = database.hold_connect()
+    return connection
 
 
 class Model(object):
@@ -21,8 +34,7 @@ class Model(object):
     result = {}
 
     def __init__(self, **kwargs):
-        database = DB()
-        self.db = database.connect
+        self.db = init_model()
 
     async def get(self):
         assert self.pk is not None
