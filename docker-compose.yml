@@ -2,7 +2,7 @@ mongodb:
   image: mongo:3.2
   container_name: chat-mongodb
   expose:
-    - "27017:27017"
+    - 27017:27017
 
 auth:
   build: .
