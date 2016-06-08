@@ -91,31 +91,24 @@ class ChatWS(AbsView):
                     await self.close_chat(for_me=True)
 
                 else:
-                    try:
-                        data = json.loads(msg.data)
+                    data = json.loads(msg.data)
 
-                        receiver = data.get('receiver', None)
+                    receiver = data.get('receiver', None)
 
-                        if receiver:
-                            await self.check_receiver(receiver)
+                    if receiver:
+                        await self.check_receiver(receiver)
 
-                        msg_obj = MessagesFromClientInChat(
-                            chat=self.chat.get('_id'),
-                            client=self.client_pk,
-                            msg=data.get('msg'),
-                            receiver_message=receiver
-                        )
+                    msg_obj = MessagesFromClientInChat(
+                        chat=self.chat.get('_id'),
+                        client=self.client_pk,
+                        msg=data.get('msg'),
+                        receiver_message=receiver
+                    )
 
-                        await msg_obj.save()
+                    await msg_obj.save()
 
-                        try:
-                            for client in self.agents:
-                                await self.notify(client, msg_obj.message_content, receiver)
-                        except(Exception,) as error:
-                            log.error("%s" % error)
-
-                    except(Exception,) as error:
-                        log.error("prepare_msg :: %s" % error)
+                    for client in self.agents:
+                        await self.notify(client, msg_obj.message_content, receiver)
 
     async def check_client(self):
         token_in_header = self.request.__dict__.get('headers').get('AUTHORIZATION', None)

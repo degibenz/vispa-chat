@@ -11,7 +11,7 @@ log.setLevel(logging.DEBUG)
 
 import datetime
 from core.model import Model, ObjectId
-
+from core.exceptions import *
 from models.client import Client
 
 __all__ = [
@@ -149,8 +149,8 @@ class MessagesFromClientInChat(Model):
         super(MessagesFromClientInChat, self).__init__()
 
     async def save(self, **kwargs):
-        if self.client == self.receiver_message:
-            raise Exception("you cant send message yourself")
+        if str(self.client) == str(self.receiver_message):
+            raise SendMessageYourself
 
         else:
             data = {

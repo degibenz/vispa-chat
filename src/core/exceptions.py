@@ -33,3 +33,8 @@ class ClientNotFoundInChat(Exception):
 class ChatNotFound(Exception):
     def __str__(self):
         return "Chat not found via enter PK"
+
+
+class SendMessageYourself(Exception):
+    def __str__(self):
+        return "you cant send message yourself"
