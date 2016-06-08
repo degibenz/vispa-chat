@@ -241,6 +241,7 @@ class ChatWS(AbsView):
                 'socket': self.ws
             }
             await self.notify(item=data, message="%s" % self.response)
+            await self.close_chat()
 
         finally:
             return self.ws
