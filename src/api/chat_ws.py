@@ -159,10 +159,7 @@ class ChatWS(AbsView):
 
         except(Exception,) as error:
             log.error("%s" % error)
-            data = {
-                'client_uid': self.client_pk
-            }
-            self.notify(item=data, message="%s" % error)
+
 
     async def notify(self, item: dict, message: str, receiver=None):
 
@@ -239,6 +236,10 @@ class ChatWS(AbsView):
             }
 
             log.error("%s" % self.response)
-
+            data = {
+                'client_uid': self.client_pk
+            }
+            self.notify(item=data, message="%s" % error)
         finally:
+
             return self.ws
