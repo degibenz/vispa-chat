@@ -4,8 +4,10 @@ __author__ = 'degibenz'
 
 from aiohttp.log import *
 
+from aiohttp import web
+
 from core.middleware import check_auth
-from core.api import AbsView, json_response
+from core.api import json_response
 from models.chat import *
 
 __all__ = [
@@ -15,86 +17,61 @@ __all__ = [
 ]
 
 
-class GetChat(AbsView):
+class GetChat(web.View):
     @check_auth
     async def get(self):
-        try:
             chat = Chat(
                 pk=self.request.match_info.get('id')
             )
             chat_info = await chat.get()
 
-            self.response = {
-                'chat-uid': "%s" % chat.pk,
-                'client-list': await chat.list_clients,
-                'author': "%s" % chat_info.get('author')
-            }
+            if chat_info:
+                response = {
+                    'status': True,
+                    'chat-uid': "{}".format(chat.pk),
+                    'client-list': await chat.list_clients,
+                    'author': "{}".format(chat_info.get('author'))
+                }
+            else:
+                response = {
+                    'status': False,
+                    'error': 'chat not found'
+                }
 
-            access_logger.log("%s" % self.response)
-
-        except(Exception,) as error:
-            self.response = {
-                'status': False,
-                'error': '%s' % error
-            }
-
-            access_logger.error("%s" % self.response)
-
-        finally:
+            access_logger.log("%s" % response)
 
             return json_response(
-                self.response
+                response
             )
 
 
-class GetChatList(AbsView):
+class GetChatList(web.View):
     @check_auth
     async def get(self):
-        try:
-            chat = Chat()
+        chat = Chat()
 
-            self.response = {
-                'status': True,
-                'chats-list': await chat.list
-            }
+        response = {
+            'status': True,
+            'chats-list': await chat.list
+        }
 
-        except(Exception,) as error:
-            self.response = {
-                'status': False,
-                'error': '%s' % error
-            }
-
-            server_logger.error("%s" % self.response)
-
-        finally:
-            return json_response(
-                self.response
-            )
+        return json_response(
+            response
+        )
 
 
-class CreateChat(AbsView):
+class CreateChat(web.View):
     @check_auth
     async def post(self):
-        try:
+        chat = Chat(
+            author=self.request.client.get('_id')
+        )
 
-            chat = Chat(
-                author=self.request.client.get('_id')
-            )
+        response = {
+            'status': True,
+            'chat': "{}".format(await chat.save())
+        }
 
-            self.response = {
-                'status': True,
-                'chat': "%s" % await chat.save()
-            }
-
-        except(Exception,) as error:
-            self.response = {
-                'status': False,
-                'error': '%s' % error
-            }
-
-            server_logger.error("%s" % self.response)
-
-        finally:
-            return json_response(
-                self.response
-            )
+        return json_response(
+            response
+        )
