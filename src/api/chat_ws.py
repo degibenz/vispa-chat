@@ -78,6 +78,7 @@ class ChatWS(AbsView):
             raise ClientNotFoundInChat
 
     async def prepare_msg(self):
+
         while True:
             msg = await self.ws.receive()
 
@@ -106,7 +107,8 @@ class ChatWS(AbsView):
 
                     await msg_obj.save()
 
-                    [await self.notify(client, msg_obj.message_content, receiver) for client in self.agents]
+                    for client in self.agents:
+                        await self.notify(client, msg_obj.message_content, receiver)
 
     async def check_client(self):
         token_in_header = self.request.__dict__.get('headers').get('AUTHORIZATION', None)
@@ -155,15 +157,15 @@ class ChatWS(AbsView):
             try:
                 if not socket.closed:
                     await socket.send_str(
-                        data="%s" % message
+                        data="{}".format(message)
                     )
 
             except(Exception,) as error:
-                log.error("notify :: %s" % error)
+                log.error("notify :: {}".format(error))
 
         if receiver:
             if item.get('client_uid') == receiver:
-                message = "@%s" % receiver + message
+                message = "@{}: {}".format(receiver, message)
 
         await _notify()
 
@@ -214,17 +216,19 @@ class ChatWS(AbsView):
 
             self.response = {
                 'status': False,
-                'error': '%s' % error
+                'error': "{}".format(error)
             }
-
-            log.error("%s" % self.response)
 
             data = {
                 'client_uid': self.client_pk,
                 'socket': self.ws
             }
 
-            await self.notify(item=data, message="%s" % self.response)
+            await self.notify(
+                item=data,
+                message="{}".format(self.response)
+            )
+
             await self.close_chat()
 
         finally:
