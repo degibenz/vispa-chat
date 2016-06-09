@@ -2,7 +2,7 @@
 
 __author__ = 'degibenz'
 
-from aiohttp.log import *
+import uuid
 
 import datetime
 from core.model import Model, ObjectId
@@ -29,23 +29,26 @@ class Client(Model):
     @property
     async def token(self):
         key = None
-        try:
-            token_is = Token()
+        token_is = Token()
 
-            search_key = await token_is.objects.find_one(
-                {
-                    'client': ObjectId(self.pk)
-                }
-            )
+        search_key = await token_is.objects.find_one(
+            {
+                'client': ObjectId(self.pk)
+            }
+        )
 
-            if search_key:
-                key = "%s" % search_key.get('token')
+        if search_key:
+            key = "%s" % search_key.get('token')
 
-        except(Exception,) as error:
-            access_logger.error("%s" % error)
+        else:
+            token = str(uuid.uuid4())
 
-        finally:
-            return key
+            await token_is.save(**{
+                'client': ObjectId(self.pk),
+                'token': "%s" % token
+            })
+
+        return key
 
 
 class Token(Model):

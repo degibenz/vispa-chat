@@ -2,11 +2,11 @@
 
 __author__ = 'degibenz'
 
-import uuid
-from core.api import AbsView, json_response
-from bson.objectid import ObjectId
+from aiohttp import web
 
-from models.client import Client, Token
+from core.api import json_response
+
+from models.client import Client
 from core.middleware import check_auth
 
 __all__ = [
@@ -16,30 +16,24 @@ __all__ = [
 ]
 
 
-class ClientInfo(AbsView):
+class ClientInfo(web.View):
     @check_auth
     async def get(self):
-        client = Client(
+        client_obj = Client(
             pk=self.request.match_info.get('id')
         )
 
-        response = await client.get()
+        client = await client_obj.get()
 
-        self.response = {
-            'id': str(response.get('_id')),
-            'email': response.get('email'),
+        result = {
+            'id': "{}".format(client.get('_id')),
+            'email': client.get('email'),
         }
 
-        if hasattr(self.request, 'client'):
-            if str(self.request.client) == str(response.get('_id')):
-                self.response.setdefault(
-                    'token', "%s" % await client.token
-                )
-
-        return json_response(self.response)
+        return json_response(result)
 
 
-class CreateClient(AbsView):
+class CreateClient(web.View):
     async def post(self):
         data = await self.request.json()
 
@@ -53,7 +47,7 @@ class CreateClient(AbsView):
 
         client = Client()
 
-        client_exit = await client.db["%s" % client.collection].find_one(
+        client_exit = await client.objects.find_one(
             {"email": email}
         )
 
@@ -62,20 +56,20 @@ class CreateClient(AbsView):
                 **data
             )
 
-            self.response = {
+            response = {
                 'status': True,
-                'client_id': "%s" % client_object
+                'client_id': "".format(client_object)
             }
         else:
-            self.response = {
+            response = {
                 'status': False,
                 'error': 'client already exist'
             }
 
-        return json_response(self.response)
+        return json_response(response)
 
 
-class AuthClient(AbsView):
+class AuthClient(web.View):
     async def post(self):
         data = await self.request.json()
 
@@ -93,38 +87,15 @@ class AuthClient(AbsView):
 
         if client_exit:
 
-            token = Token(
-                client_uid=client_exit.get('_id')
-            )
-
-            token_exist = await token.objects.find_one(
-                {
-                    "client": ObjectId(token.client_uid)
-                }
-            )
-
-            if token_exist:
-                token_is = token_exist.get(
-                    'token'
-                )
-
-            else:
-                token_is = str(uuid.uuid4())
-
-                await token.save(**{
-                    'client': token.client_uid,
-                    'token': "%s" % token_is
-                })
-
-            self.response = {
+            response = {
                 'status': True,
-                'token': "%s" % token_is
+                'token': "%s" % await client.token
             }
 
         else:
-            self.response = {
+            response = {
                 'status': False,
                 'error': 'client not found'
             }
 
-        return json_response(self.response)
+        return json_response(response)
