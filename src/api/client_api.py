@@ -27,7 +27,7 @@ class ClientInfo(web.View):
 
         result = {
             'id': "{}".format(client.get('_id')),
-            'email': client.get('email'),
+            'email': "{}".format(client.get('email')),
         }
 
         return json_response(result)
@@ -58,7 +58,7 @@ class CreateClient(web.View):
 
             response = {
                 'status': True,
-                'client_id': "".format(client_object)
+                'client_id': "{}".format(client_object)
             }
         else:
             response = {
@@ -89,7 +89,7 @@ class AuthClient(web.View):
 
             response = {
                 'status': True,
-                'token': "%s" % await client.token
+                'token': "{}".format(await client.token)
             }
 
         else:
