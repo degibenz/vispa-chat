@@ -1,12 +1,6 @@
-from __future__ import unicode_literals, absolute_import
-
 # -*- coding: utf-8 -*-
+
 __author__ = 'degibenz'
-
-import logging
-
-log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
 
 import asyncio
 from aiohttp import web

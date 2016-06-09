@@ -1,6 +1,5 @@
-from __future__ import unicode_literals, absolute_import
-
 # -*- coding: utf-8 -*-
+
 __author__ = 'degibenz'
 
 import logging
@@ -107,8 +106,7 @@ class ChatWS(AbsView):
 
                     await msg_obj.save()
 
-                    for client in self.agents:
-                        await self.notify(client, msg_obj.message_content, receiver)
+                    [await self.notify(client, msg_obj.message_content, receiver) for client in self.agents]
 
     async def check_client(self):
         token_in_header = self.request.__dict__.get('headers').get('AUTHORIZATION', None)
@@ -135,23 +133,19 @@ class ChatWS(AbsView):
             raise ClientNotFoundViaToken
 
     async def cache_ws(self):
-        try:
-            chat_root = ClientsInChatRoom(
-                chat=self.chat_pk,
-                client=self.client_pk,
-            )
+        chat_root = ClientsInChatRoom(
+            chat=self.chat_pk,
+            client=self.client_pk,
+        )
 
-            q = {
-                'chat': chat_root.chat,
-                'client': chat_root.client,
-                'online': True
-            }
+        q = {
+            'chat': chat_root.chat,
+            'client': chat_root.client,
+            'online': True
+        }
 
-            if not await chat_root.objects.find_one(q):
-                await chat_root.save()
-
-        except(Exception,) as error:
-            log.error("%s" % error)
+        if not await chat_root.objects.find_one(q):
+            await chat_root.save()
 
     async def notify(self, item: dict, message: str, receiver=None):
 
@@ -175,20 +169,16 @@ class ChatWS(AbsView):
 
     async def close_chat(self, for_me=False):
 
-        async def _del_it():
-            try:
-                await item.get('socket').close()
-            except(Exception,)as error:
-                pass
-            finally:
-                del item
+        async def _del_it(item):
+            await item.get('socket').close()
+            self.agents.pop()
 
-        for item in self.agents:
+        for item in self.agents[:]:
             if for_me:
                 if item.get('chat_uid') == self.chat_pk and item.get('client_uid') == self.client_pk:
-                    await _del_it()
+                    await _del_it(item)
             else:
-                await _del_it()
+                await _del_it(item)
 
     async def get(self):
         try:
