@@ -12,7 +12,8 @@ from core.middleware import check_auth
 __all__ = [
     'ClientInfo',
     'CreateClient',
-    'AuthClient'
+    'AuthClient',
+    'DeleteClient'
 ]
 
 
@@ -56,9 +57,12 @@ class CreateClient(web.View):
                 **data
             )
 
+            client.pk = client_object
+
             response = {
                 'status': True,
-                'client_id': "{}".format(client_object)
+                'client_id': "{}".format(client_object),
+                'token': "{}".format(await client.token)
             }
         else:
             response = {
@@ -86,8 +90,10 @@ class AuthClient(web.View):
         )
 
         if client_exit:
+            client.pk = client_exit.get('_id')
 
             response = {
+                'client_id': "{}".format(client.pk),
                 'status': True,
                 'token': "{}".format(await client.token)
             }
@@ -96,6 +102,35 @@ class AuthClient(web.View):
             response = {
                 'status': False,
                 'error': 'client not found'
+            }
+
+        return json_response(response)
+
+
+class DeleteClient(web.View):
+    async def post(self):
+        data = await self.request.json()
+
+        try:
+            client = Client(
+                pk=data.get('id')
+            )
+
+            if await client.get():
+                await client.delete()
+
+                response = {
+                    'status': True
+                }
+            else:
+                response = {
+                    'status': False,
+                    'error': 'client not found'
+                }
+        except(Exception,) as error:
+            response = {
+                'status': False,
+                'error': "{}".format(error)
             }
 
         return json_response(response)

@@ -28,7 +28,6 @@ class Client(Model):
 
     @property
     async def token(self):
-        key = None
         token_is = Token()
 
         search_key = await token_is.objects.find_one(
@@ -41,14 +40,43 @@ class Client(Model):
             key = "%s" % search_key.get('token')
 
         else:
-            token = str(uuid.uuid4())
+            key = str(uuid.uuid4())
 
             await token_is.save(**{
                 'client': ObjectId(self.pk),
-                'token': "%s" % token
+                'token': "%s" % key
             })
 
         return key
+
+    async def delete(self):
+        try:
+            token_is = Token()
+
+            search_key = await token_is.objects.find_one(
+                {
+                    'client': ObjectId(self.pk)
+                }
+            )
+
+            token_is.pk = ObjectId(search_key.get('_id'))
+
+            await token_is.delete()
+
+            await super(Client, self).delete()
+
+            self.result = {
+                'status': True
+            }
+
+        except(Exception,) as error:
+            self.result = {
+                'status': False,
+                'error': "{}".format(error)
+            }
+
+        finally:
+            return self.result
 
 
 class Token(Model):

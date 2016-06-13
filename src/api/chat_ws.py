@@ -108,7 +108,11 @@ class ChatWS(AbsView):
                     await msg_obj.save()
 
                     for client in self.agents:
-                        await self.notify(client, msg_obj.message_content, receiver)
+                        await self.notify(
+                            client,
+                            msg_obj.message_content,
+                            receiver
+                        )
 
     async def check_client(self):
         token_in_header = self.request.__dict__.get('headers').get('AUTHORIZATION', None)

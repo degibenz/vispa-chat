@@ -77,7 +77,7 @@ class Model(object):
     async def delete(self):
 
         try:
-            self.objects.delete(
+            self.objects.remove(
                 {
                     "_id": ObjectId(self.pk)
                 }
@@ -91,8 +91,6 @@ class Model(object):
                 'status': False,
                 'error': '%s' % error
             }
-
-            log.error("%s" % self.result)
 
         finally:
             return self.result
