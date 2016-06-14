@@ -11,13 +11,17 @@ __all__ = [
     'app'
 ]
 
-app = web.Application()
 
-app.router.add_route('GET', '/client/{id}/', ClientInfo)
-app.router.add_route('POST', '/client/create/', CreateClient)
-app.router.add_route('POST', '/client/auth/', AuthClient)
-app.router.add_route('POST', '/client/delete/', DeleteClient)
+def app(loop):
+    app_server = web.Application(loop=loop)
 
-app.router.add_route('GET', '/chat/byId/{id}/', GetChat)
-app.router.add_route('GET', '/chat/list/', GetChatList)
-app.router.add_route('POST', '/chat/create/', CreateChat)
+    app_server.router.add_route('GET', '/client/{id}/', ClientInfo)
+    app_server.router.add_route('POST', '/client/create/', CreateClient)
+    app_server.router.add_route('POST', '/client/auth/', AuthClient)
+    app_server.router.add_route('POST', '/client/delete/', DeleteClient)
+
+    app_server.router.add_route('GET', '/chat/byId/{id}/', GetChat)
+    app_server.router.add_route('GET', '/chat/list/', GetChatList)
+    app_server.router.add_route('POST', '/chat/create/', CreateChat)
+
+    return app_server

@@ -35,9 +35,9 @@ class ClientInfo(web.View):
 
 
 class CreateClient(web.View):
+
     async def post(self):
         data = await self.request.json()
-
         email = data.get('email')
         password = data.get('password')
 
@@ -57,12 +57,10 @@ class CreateClient(web.View):
                 **data
             )
 
-            client.pk = client_object
-
             response = {
                 'status': True,
                 'client_id': "{}".format(client_object),
-                'token': "{}".format(await client.token)
+                # 'token': "{}".format(await client.token)
             }
         else:
             response = {

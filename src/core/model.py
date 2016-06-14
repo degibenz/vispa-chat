@@ -14,13 +14,11 @@ __all__ = [
     'ObjectId'
 ]
 
-loop = asyncio.get_event_loop()
-
 # TODO было бы хорошо, сделать тут полноценное удержание соединения
-database = DB(loop=loop)
+database = DB()
 
 
-def init_model():
+def init_model(loop=None):
     connection = database.hold_connect()
     return connection
 
@@ -29,11 +27,15 @@ class Model(object):
     pk = None
     db = None
     collection = None
+    loop = None
 
     result = {}
 
     def __init__(self, **kwargs):
-        self.db = init_model()
+        if 'io_loop' in kwargs.keys():
+            self.loop = kwargs.get('io_loop')
+
+        self.db = init_model(loop=self.loop)
 
     async def get(self):
         assert self.pk is not None
@@ -68,8 +70,6 @@ class Model(object):
                 'status': False,
                 'error': '%s' % error
             }
-
-            access_logger.error("%s" % self.result)
 
         finally:
             return self.result

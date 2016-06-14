@@ -9,7 +9,7 @@ loop = asyncio.get_event_loop()
 
 async def init(loop):
     srv = await loop.create_server(
-        app.make_handler(),
+        app(loop=loop).make_handler(),
         '0.0.0.0',
         8080
     )
