@@ -1,4 +1,4 @@
-aiohttp
+git+git://github.com/KeepSafe/aiohttp
 motor
 pytest-asyncio
 
