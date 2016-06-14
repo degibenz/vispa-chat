@@ -38,6 +38,17 @@ class TestClientApi(unittest.TestCase):
 
         http_status = request.status_code
 
+        return request
+
+    def test_again_create_client(self):
+        request = self.test_create_client()
+
+        status = request.json().get('status')
+        token = request.json().get('token')
+        pk = request.json().get('client_id')
+
+        http_status = request.status_code
+
     def test_auth_client(self):
         path = "client/auth/"
 
@@ -50,6 +61,7 @@ class TestClientApi(unittest.TestCase):
         token = request.json().get('token')
         pk = request.json().get('client_id')
         http_status = request.status_code
+
         return pk
 
     def test_delete_client(self):
