@@ -30,8 +30,8 @@ class TestClientApi(AioHTTPTestCase):
             data=data
         )
 
-        return await request.json()
-
+        print(await request.text())
+        return request
     @unittest_run_loop
     async def test_auth_client(self):
         data = json.dumps(self.data)

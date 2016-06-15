@@ -35,8 +35,6 @@ class Model(object):
         if 'io_loop' in kwargs.keys():
             self.loop = kwargs.get('io_loop')
 
-        self.db = init_model(loop=self.loop)
-
     async def get(self):
         assert self.pk is not None
 

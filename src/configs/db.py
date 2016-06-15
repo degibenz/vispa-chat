@@ -19,13 +19,9 @@ class DB(object):
     db = None
     loop = None
 
-    def hold_connect(self, loop=None):
-        if self.db:
-            pass
-        else:
-            self.db = ma.AsyncIOMotorClient(
-                '%s:%s' % (MONGODB_SERVER_HOST, MONGODB_SERVER_PORT),
-                io_loop=loop,
-            )
+    async def hold_connect(self):
+        self.db = ma.AsyncIOMotorClient(
+            '%s:%s' % (MONGODB_SERVER_HOST, MONGODB_SERVER_PORT),
+        )
 
         return self.db['%s' % MONGODB_DB_NAME]

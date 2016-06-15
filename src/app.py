@@ -11,9 +11,18 @@ __all__ = [
     'app'
 ]
 
+from configs.db import DB
+
+database = DB()
+
 
 def app(loop):
-    app_server = web.Application(loop=loop)
+    connection = database.hold_connect()
+
+    app_server = web.Application(
+        loop=loop
+    )
+    app_server['db'] = connection
 
     app_server.router.add_route('GET', '/client/{id}/', ClientInfo)
     app_server.router.add_route('POST', '/client/create/', CreateClient)

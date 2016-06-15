@@ -24,6 +24,8 @@ class ClientInfo(web.View):
             pk=self.request.match_info.get('id')
         )
 
+        client_obj.db = self.request.app['db']
+
         client = await client_obj.get()
 
         result = {
@@ -41,12 +43,16 @@ class CreateClient(web.View):
         email = data.get('email')
         password = data.get('password')
 
+        print(data)
+
         data = {
             'email': email,
             'password': password
         }
 
         client = Client()
+
+        client.db = await self.request.app['db']
 
         client_exit = await client.objects.find_one(
             {"email": email}
@@ -79,6 +85,8 @@ class AuthClient(web.View):
         password = data.get('password')
 
         client = Client()
+
+        client.db = await self.request.app['db']
 
         client_exit = await client.objects.find_one(
             {
@@ -113,6 +121,8 @@ class DeleteClient(web.View):
             client = Client(
                 pk=data.get('id')
             )
+
+            client.db = self.request.app['db']
 
             if await client.get():
                 await client.delete()
