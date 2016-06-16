@@ -9,19 +9,20 @@ from configs.db import DB
 
 os.environ['IS_TEST'] = 'True'
 
+email = binascii.b2a_hex(os.urandom(15)).decode("utf-8")
+password = binascii.b2a_hex(os.urandom(15)).decode("utf-8")
+
 
 class TestClientApi(AioHTTPTestCase):
     data = {}
-    email = binascii.b2a_hex(os.urandom(15)).decode("utf-8")
-    password = binascii.b2a_hex(os.urandom(15)).decode("utf-8")
 
     def setUp(self):
         self.database = DB()
         self.loop = asyncio.new_event_loop()
 
         self.data = {
-            'email': self.email,
-            'password': self.password
+            'email': email,
+            'password': password
         }
 
         self.app = self.get_app(

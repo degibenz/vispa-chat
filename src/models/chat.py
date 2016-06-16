@@ -88,6 +88,8 @@ class Chat(Model):
             return result
 
     async def save(self, **kwargs):
+        assert self.author is not None
+
         data = {
             'author': self.author,
             'create_at': self.create_at

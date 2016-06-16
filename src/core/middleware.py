@@ -25,42 +25,42 @@ def check_auth(func):
         if token_in_header:
             token = Token()
 
-            try:
+            if request._request.app['db']:
+                token.db = request._request.app['db']
+
                 token_is = await token.objects.find_one({
                     'token': token_in_header
                 })
 
-                try:
+                if not token_is:
+                    raise TokenIsNotFound
 
-                    if not token_is:
-                        raise TokenIsNotFound
+                else:
+                    client = Client(
+                        pk="{}".format(token_is.get('client'))
+                    )
 
-                    else:
-                        client = Client(
-                            pk=token_is.get('client')
-                        )
+                    print("info token :: ", token_is)
+                    print("client in token :: ", token_is.get('client'))
 
-                        request._request.client = await client.get()
+                    if request._request.app['db']:
+                        client.db = request._request.app['db']
 
-                        if not client:
-                            raise ClientNotFoundViaToken
+                    request._request.client = await client.get()
 
-                        return await func(request, *args, **kwargs)
+                    print("Client is :: ", await client.get())
 
-                except(Exception,) as error:
-                    access_logger.error("%s" % error)
+                    if not client:
+                        raise ClientNotFoundViaToken
 
-                    return json_response({
-                        'status': False,
-                        'error': 'token not correct'
-                    })
+                    return await func(request, *args, **kwargs)
 
-            except(Exception,) as error:
-                access_logger.error("%s" % error)
-
-                return json_response({
-                    'status': False,
-                    'error': '%s' % error
-                })
+                    # except(Exception,) as error:
+                    #     access_logger.error("%s" % error)
+                    #
+                    #     return json_response({
+                    #         'status': False,
+                    #         'error': '%s' % error
+                    #     })
 
     return wrapper

@@ -27,7 +27,6 @@ class Model(object):
     result = {}
 
     def __init__(self, **kwargs):
-        print(os.getenv('IS_TEST'))
         if not bool(os.getenv('IS_TEST')):
             if 'io_loop' in kwargs.keys():
                 self.loop = kwargs.get('io_loop')

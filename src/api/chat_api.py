@@ -20,29 +20,29 @@ __all__ = [
 class GetChat(web.View):
     @check_auth
     async def get(self):
-            chat = Chat(
-                pk=self.request.match_info.get('id')
-            )
-            chat_info = await chat.get()
+        chat = Chat(
+            pk=self.request.match_info.get('id')
+        )
+        chat_info = await chat.get()
 
-            if chat_info:
-                response = {
-                    'status': True,
-                    'chat-uid': "{}".format(chat.pk),
-                    'client-list': await chat.list_clients,
-                    'author': "{}".format(chat_info.get('author'))
-                }
-            else:
-                response = {
-                    'status': False,
-                    'error': 'chat not found'
-                }
+        if chat_info:
+            response = {
+                'status': True,
+                'chat-uid': "{}".format(chat.pk),
+                'client-list': await chat.list_clients,
+                'author': "{}".format(chat_info.get('author'))
+            }
+        else:
+            response = {
+                'status': False,
+                'error': 'chat not found'
+            }
 
-            access_logger.log("%s" % response)
+        access_logger.log("%s" % response)
 
-            return json_response(
-                response
-            )
+        return json_response(
+            response
+        )
 
 
 class GetChatList(web.View):
@@ -66,6 +66,9 @@ class CreateChat(web.View):
         chat = Chat(
             author=self.request.client.get('_id')
         )
+
+        if self.request.app['db']:
+            chat.db = self.request.app['db']
 
         response = {
             'status': True,
