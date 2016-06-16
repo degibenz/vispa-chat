@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
 __author__ = 'degibenz'
-
+import uuid
 from aiohttp import web
 
 from core.api import json_response
 
-from models.client import Client
+from models.client import Client, Token, ObjectId
 from core.middleware import check_auth
 
 __all__ = [
@@ -24,7 +24,8 @@ class ClientInfo(web.View):
             pk=self.request.match_info.get('id')
         )
 
-        client_obj.db = self.request.app['db']
+        if self.request.app['db']:
+            client_obj.db = self.request.app['db']
 
         client = await client_obj.get()
 
@@ -37,13 +38,10 @@ class ClientInfo(web.View):
 
 
 class CreateClient(web.View):
-
     async def post(self):
         data = await self.request.json()
         email = data.get('email')
         password = data.get('password')
-
-        print(data)
 
         data = {
             'email': email,
@@ -52,7 +50,7 @@ class CreateClient(web.View):
 
         client = Client()
 
-        client.db = await self.request.app['db']
+        client.db = self.request.app['db']
 
         client_exit = await client.objects.find_one(
             {"email": email}
@@ -63,11 +61,33 @@ class CreateClient(web.View):
                 **data
             )
 
+            token = Token()
+
+            if self.request.app['db']:
+                token.db = self.request.app['db']
+
+            await client.save()
+
+            token_is = await token.objects.find_one({
+                'client': ObjectId("{}".format(client.pk))
+            })
+
+            if token_is:
+                pass
+            else:
+                token_is = str(uuid.uuid4())
+
+                await token.save(**{
+                    'client': ObjectId(client.pk),
+                    'token': "{}".format(token_is)
+                })
+
             response = {
                 'status': True,
                 'client_id': "{}".format(client_object),
-                # 'token': "{}".format(await client.token)
+                'token': "{}".format(token_is)
             }
+
         else:
             response = {
                 'status': False,
@@ -86,7 +106,7 @@ class AuthClient(web.View):
 
         client = Client()
 
-        client.db = await self.request.app['db']
+        client.db = self.request.app['db']
 
         client_exit = await client.objects.find_one(
             {

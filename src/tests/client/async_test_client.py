@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
 import json
 import os, binascii
+import asyncio
 from app import app
-from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
+from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop, TestClient
+
+from configs.db import DB
+
+os.environ['IS_TEST'] = 'True'
 
 
 class TestClientApi(AioHTTPTestCase):
@@ -11,49 +16,82 @@ class TestClientApi(AioHTTPTestCase):
     password = binascii.b2a_hex(os.urandom(15)).decode("utf-8")
 
     def setUp(self):
+        self.database = DB()
+        self.loop = asyncio.new_event_loop()
+
         self.data = {
             'email': self.email,
             'password': self.password
         }
 
-        super(TestClientApi, self).setUp()
+        self.app = self.get_app(
+            self.loop
+        )
+
+        self.client = TestClient(self.app)
 
     def get_app(self, loop):
-        return app(loop=loop)
+        server = app(loop=loop)
+
+        server['db'] = self.database.hold_connect(
+            loop=loop
+        )
+
+        return server
 
     @unittest_run_loop
-    async def test_join_client(self):
-        data = json.dumps(self.data)
+    async def test_a_join_client(self):
+        print("test_join_client")
 
+        data = json.dumps(self.data)
         request = await self.client.post(
             path="/client/create/",
             data=data
         )
 
-        print(await request.text())
-        return request
-    @unittest_run_loop
-    async def test_auth_client(self):
-        data = json.dumps(self.data)
+        content = await request.json()
+        return content
 
+    @unittest_run_loop
+    async def test_b_auth_client(self):
+        print("test_auth_client")
+        data = json.dumps(self.data)
         request = await self.client.post(
             path="/client/auth/",
             data=data
         )
-        return await request.json()
+        content = await request.json()
+        return content
 
     @unittest_run_loop
-    async def test_join_client_again(self):
-        result = await self.test_auth_client()
+    async def test_с_join_client_again(self):
+        print("test_auth_with_exist_data")
+
+        data = json.dumps(self.data)
+        request = await self.client.post(
+            path="/client/create/",
+            data=data
+        )
+
+        content = await request.json()
+        return content
 
     @unittest_run_loop
-    async def test_delete_client(self):
-        client_id = await self.test_auth_client()
+    async def test_d_delete_client(self):
+        print("test_delete_client")
+        data = json.dumps(self.data)
+        auth_request = await self.client.post(
+            path="/client/auth/",
+            data=data
+        )
+
+        content = await auth_request.json()
+
         data = json.dumps({
-            'id': client_id
+            'id': content.get('client_id')
         })
 
-        request = await self.client.post(
+        delete_request = await self.client.post(
             path="/client/delete/",
             data=data
         )

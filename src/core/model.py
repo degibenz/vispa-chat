@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 __author__ = 'degibenz'
-
+import os
 import asyncio
 
 from aiohttp.log import *
@@ -18,11 +18,6 @@ __all__ = [
 database = DB()
 
 
-def init_model(loop=None):
-    connection = database.hold_connect()
-    return connection
-
-
 class Model(object):
     pk = None
     db = None
@@ -32,8 +27,14 @@ class Model(object):
     result = {}
 
     def __init__(self, **kwargs):
-        if 'io_loop' in kwargs.keys():
-            self.loop = kwargs.get('io_loop')
+        print(os.getenv('IS_TEST'))
+        if not bool(os.getenv('IS_TEST')):
+            if 'io_loop' in kwargs.keys():
+                self.loop = kwargs.get('io_loop')
+            else:
+                self.loop = asyncio.get_event_loop()
+
+            self.db = database.hold_connect(loop=self.loop)
 
     async def get(self):
         assert self.pk is not None
