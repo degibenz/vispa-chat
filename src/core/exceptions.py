@@ -3,6 +3,11 @@
 __author__ = 'degibenz'
 
 
+class ObjectNotFound(Exception):
+    def __str__(self):
+        return "Object not found"
+
+
 class TokeInHeadersNotFound(Exception):
     def __str__(self):
         return "requires authorization key in request-header"

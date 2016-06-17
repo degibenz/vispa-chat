@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
 __author__ = 'degibenz'
-import uuid
 from aiohttp import web
 
 from core.api import json_response
 
-from models.client import Client, Token, ObjectId
+from models.client import Client, ObjectId
 from core.middleware import check_auth
 
 __all__ = [
@@ -21,7 +20,7 @@ class ClientInfo(web.View):
     @check_auth
     async def get(self):
         client_obj = Client(
-            pk=self.request.match_info.get('id')
+            pk=ObjectId(self.request.match_info.get('id'))
         )
 
         if self.request.app['db']:
@@ -40,53 +39,31 @@ class ClientInfo(web.View):
 class CreateClient(web.View):
     async def post(self):
         data = await self.request.json()
-        email = data.get('email')
-        password = data.get('password')
 
-        data = {
-            'email': email,
-            'password': password
-        }
-
-        client = Client()
-
-        client.db = self.request.app['db']
-
-        client_exit = await client.objects.find_one(
-            {"email": email}
+        client = Client(
+            email=data.get('email'),
+            password=data.get('password')
         )
 
-        if not client_exit:
-            client_object = await client.save(
-                **data
-            )
+        if self.request.app['db']:
+            client.db = self.request.app['db']
 
-            token = Token()
+        q = {'email': client.client_email}
 
-            if self.request.app['db']:
-                token.db = self.request.app['db']
+        search = await client.objects.find_one(q)
 
-            await client.save()
+        if not search:
+            try:
+                response = {
+                    'status': True,
+                    'client_id': "{}".format(await client.save()),
+                }
 
-            token_is = await token.objects.find_one({
-                'client': ObjectId("{}".format(client.pk))
-            })
-
-            if token_is:
-                pass
-            else:
-                token_is = str(uuid.uuid4())
-
-                await token.save(**{
-                    'client': ObjectId(client.pk),
-                    'token': "{}".format(token_is)
-                })
-
-            response = {
-                'status': True,
-                'client_id': "{}".format(client_object),
-                'token': "{}".format(token_is)
-            }
+            except(Exception,) as error:
+                response = {
+                    'status': False,
+                    'error': "{}".format(error)
+                }
 
         else:
             response = {
@@ -101,19 +78,20 @@ class AuthClient(web.View):
     async def post(self):
         data = await self.request.json()
 
-        email = data.get('email')
-        password = data.get('password')
-
-        client = Client()
-
-        client.db = self.request.app['db']
-
-        client_exit = await client.objects.find_one(
-            {
-                "email": email,
-                "password": password
-            }
+        client = Client(
+            email=data.get('email'),
+            password=data.get('password')
         )
+
+        if self.request.app['db']:
+            client.db = self.request.app['db']
+
+        q = {
+            "email": client.client_email,
+            "password": client.password
+        }
+
+        client_exit = await client.objects.find_one(q)
 
         if client_exit:
             client.pk = client_exit.get('_id')
@@ -134,15 +112,17 @@ class AuthClient(web.View):
 
 
 class DeleteClient(web.View):
+
     async def post(self):
         data = await self.request.json()
 
         try:
             client = Client(
-                pk=data.get('id')
+                pk=ObjectId(data.get('id'))
             )
 
-            client.db = self.request.app['db']
+            if self.request.app['db']:
+                client.db = self.request.app['db']
 
             if await client.get():
                 await client.delete()

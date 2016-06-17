@@ -29,28 +29,49 @@ class Client(Model):
     @property
     async def token(self):
         token_is = Token()
-        token_is.db = self.db
 
-        return await token_is.key(self.pk)
+        token_is.db = self.db
+        token_is.client_uid = self.pk
+
+        return await token_is.key()
+
+    async def save(self, **kwargs):
+        assert self.client_email is not None
+        assert self.password is not None
+
+        data = {
+            'email': self.client_email,
+            'password': self.password,
+            'join_at': datetime.datetime.now()
+        }
+
+        return await super(Client, self).save(**data)
 
     async def delete(self):
         try:
+            assert self.pk is not None
+
             token_is = Token()
+            token_is.db = self.db
 
             search_key = await token_is.objects.find_one(
                 {
-                    'client': ObjectId(self.pk)
+                    'client': ObjectId(self.pk),
+                    'token': "{}".format(await self.token)
                 }
             )
 
-            token_is.pk = ObjectId(search_key.get('_id'))
+            token_is.pk = search_key.get('_id')
 
             await token_is.delete()
 
-            await super(Client, self).delete()
+            q = {'_id': ObjectId(self.pk)}
+
+            remove_result = await self.objects.remove(q)
 
             self.result = {
-                'status': True
+                'status': True,
+                'result': remove_result
             }
 
         except(Exception,) as error:
@@ -70,26 +91,27 @@ class Token(Model):
     create_at = datetime.datetime
 
     def __init__(self, client_uid=None):
-        self.client_uid = client_uid
-
+        self.client_uid = ObjectId(client_uid)
         super(Token, self).__init__()
 
-    async def key(self, client_pk):
+    async def key(self):
+        assert self.client_uid is not None
+
         search_key = await self.objects.find_one(
             {
-                'client': ObjectId(client_pk)
+                'client': ObjectId(self.client_uid)
             }
         )
 
         if search_key:
-            key = "%s" % search_key.get('token')
-
+            key = "{}".format(search_key.get('token'))
         else:
             key = str(uuid.uuid4())
 
             await self.save(**{
-                'client': ObjectId(self.pk),
-                'token': "%s" % key
+                'client': ObjectId(self.client_uid),
+                'token': "{}".format(key),
+                'create_at': datetime.datetime.now()
             })
 
         return key

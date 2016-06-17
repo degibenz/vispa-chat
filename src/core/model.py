@@ -6,6 +6,7 @@ import asyncio
 
 from aiohttp.log import *
 from bson.objectid import ObjectId
+from core.exceptions import ObjectNotFound
 
 from configs.db import DB
 
@@ -36,6 +37,7 @@ class Model(object):
             self.db = database.hold_connect(loop=self.loop)
 
     async def get(self):
+
         assert self.pk is not None
 
         try:
@@ -44,7 +46,11 @@ class Model(object):
                     "_id": ObjectId(self.pk)
                 }
             )
-        except(Exception,) as error:
+
+            if not self.result:
+                raise ObjectNotFound
+
+        except(Exception, AssertionError) as error:
             self.result = {
                 'status': False,
                 'error': '%s' % error
@@ -75,6 +81,9 @@ class Model(object):
     async def delete(self):
 
         try:
+            if not await self.get():
+                raise ObjectNotFound
+
             self.objects.remove(
                 {
                     "_id": ObjectId(self.pk)
@@ -84,7 +93,7 @@ class Model(object):
             self.result = {
                 'status': True
             }
-        except(Exception,) as error:
+        except(Exception, AssertionError) as error:
             self.result = {
                 'status': False,
                 'error': '%s' % error
