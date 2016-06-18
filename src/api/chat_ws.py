@@ -30,11 +30,11 @@ __all__ = [
 loop = asyncio.get_event_loop()
 
 # TODO было бы хорошо, сделать тут полноценное удержание соединения
-database = DB(loop=loop)
+database = DB()
 
 
 def init_model():
-    connection = database.hold_connect()
+    connection = database()
     return connection
 
 

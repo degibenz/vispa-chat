@@ -34,7 +34,7 @@ class Model(object):
             else:
                 self.loop = asyncio.get_event_loop()
 
-            self.db = database.hold_connect(loop=self.loop)
+            self.db = database(loop=self.loop)
 
     async def get(self) -> dict:
 

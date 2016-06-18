@@ -2,8 +2,6 @@
 
 __author__ = 'degibenz'
 import os
-import asyncio
-
 from motor import motor_asyncio as ma
 
 __all__ = [
@@ -19,10 +17,11 @@ class DB(object):
     db = None
     loop = None
 
-    def hold_connect(self, loop=None):
-        self.db = ma.AsyncIOMotorClient(
-            '%s:%s' % (MONGODB_SERVER_HOST, MONGODB_SERVER_PORT),
-            io_loop=loop
-        )
+    def __call__(self, loop=None):
+        if not self.db:
+            self.db = ma.AsyncIOMotorClient(
+                '%s:%s' % (MONGODB_SERVER_HOST, MONGODB_SERVER_PORT),
+                io_loop=loop
+            )
 
         return self.db['%s' % MONGODB_DB_NAME]

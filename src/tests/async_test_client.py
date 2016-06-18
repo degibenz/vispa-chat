@@ -23,7 +23,7 @@ class TestClientApi(AioHTTPTestCase):
     def get_app(self, loop):
         server = app(loop=loop)
 
-        server['db'] = self.database.hold_connect(
+        server['db'] = self.database(
             loop=loop
         )
 
