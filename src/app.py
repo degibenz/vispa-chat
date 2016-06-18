@@ -11,10 +11,6 @@ __all__ = [
     'app'
 ]
 
-from configs.db import DB
-
-database = DB()
-
 
 def app(loop):
     app_server = web.Application(
