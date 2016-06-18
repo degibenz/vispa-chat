@@ -10,12 +10,14 @@ Chat/Auth 8080 port
 * GET /client/{id}/ - получение информации о пользователе по ID
 * POST /client/create/ - Создание новой учетной записи на сервере
 * POST /client/auth/ - авторизация пользователя по логину и паролю
+* POST /client/delete/ - удаляет запись пользователя
 
 
 ## Chat
 * GET /chat/byId/{id}/ - получение информации о чате по ID
 * GET /chat/list/ - получение списка доступных чатов
 * POST /chat/create/ - создать новый чат
+* POST /chat/delete/ - удаляет запись о чате 
 
 
 
