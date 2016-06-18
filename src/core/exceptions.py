@@ -8,6 +8,11 @@ class ObjectNotFound(Exception):
         return "Object not found"
 
 
+class NotPermissions(Exception):
+    def __str__(self):
+        return "not have permission for this action"
+
+
 class TokeInHeadersNotFound(Exception):
     def __str__(self):
         return "requires authorization key in request-header"

@@ -29,5 +29,6 @@ def app(loop):
     app_server.router.add_route('GET', '/chat/byId/{id}/', GetChat)
     app_server.router.add_route('GET', '/chat/list/', GetChatList)
     app_server.router.add_route('POST', '/chat/create/', CreateChat)
+    app_server.router.add_route('POST', '/chat/delete/', DeleteChat)
 
     return app_server

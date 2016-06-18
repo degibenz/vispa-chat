@@ -34,7 +34,7 @@ class Chat(Model):
         super(Chat, self).__init__()
 
     @property
-    async def list(self):
+    async def list(self) -> list:
         result = []
 
         try:
@@ -59,12 +59,12 @@ class Chat(Model):
             return result
 
     @property
-    async def list_clients(self):
-        assert self.pk is not None
+    async def list_clients(self) -> list:
 
         result = []
 
         try:
+            assert self.pk is not None
 
             cursor = self.objects.find(
                 {'chat': ObjectId(self.pk)}
@@ -87,15 +87,25 @@ class Chat(Model):
         finally:
             return result
 
-    async def save(self, **kwargs):
-        assert self.author is not None
+    async def save(self, **kwargs) -> dict:
+        result = dict
 
-        data = {
-            'author': self.author,
-            'create_at': self.create_at
-        }
+        try:
+            assert self.author is not None
 
-        return await super(Chat, self).save(**data)
+            data = {
+                'author': self.author,
+                'create_at': self.create_at
+            }
+
+            result = await super(Chat, self).save(**data)
+        except(Exception, AssertionError) as error:
+            result = {
+                'status': False,
+                'error': "{}".format(error)
+            }
+        finally:
+            return result
 
 
 class ClientsInChatRoom(Model):
@@ -114,15 +124,23 @@ class ClientsInChatRoom(Model):
 
         super(ClientsInChatRoom, self).__init__()
 
-    async def save(self, **kwargs):
-        data = {
-            'chat': self.chat,
-            'client': self.client,
-            'join_at': self.join_at,
-            'online': self.online,
-        }
-
-        return await super(ClientsInChatRoom, self).save(**data)
+    async def save(self, **kwargs) -> dict:
+        result = dict
+        try:
+            data = {
+                'chat': self.chat,
+                'client': self.client,
+                'join_at': self.join_at,
+                'online': self.online,
+            }
+            result = await super(ClientsInChatRoom, self).save(**data)
+        except(Exception, AssertionError) as error:
+            result = {
+                'status': False,
+                'error': "{}".format(error)
+            }
+        finally:
+            return result
 
 
 class MessagesFromClientInChat(Model):
@@ -137,30 +155,42 @@ class MessagesFromClientInChat(Model):
 
     send_at = datetime.datetime
 
-    def __init__(self, chat: ObjectId = None, client: ObjectId = None, receiver_message: ObjectId = None, msg: str = None):
+    def __init__(self, chat: ObjectId = None, client: ObjectId = None, receiver_message: ObjectId = None,
+                 msg: str = None):
 
         self.chat = chat
         self.client = client
         self.receiver_message = receiver_message
 
-        self.send_at = datetime.datetime.now()
+        self.send_at = datetime.datetime
         self.message_content = msg
 
         super(MessagesFromClientInChat, self).__init__()
 
-    async def save(self, **kwargs):
-        if str(self.client) == str(self.receiver_message):
-            raise SendMessageYourself
+    async def save(self, **kwargs) -> dict:
+        result = {}
 
-        else:
-            data = {
-                'client': self.client,
-                'receiver': self.receiver_message,
-                'msg': self.message_content,
-                'join': self.send_at
+        try:
+            if str(self.client) is str(self.receiver_message):
+                raise SendMessageYourself
+
+            else:
+                data = {
+                    'client': self.client,
+                    'receiver': self.receiver_message,
+                    'msg': self.message_content,
+                    'join': self.send_at.now()
+                }
+
+                result = await super(MessagesFromClientInChat, self).save(**data)
+        except(Exception,) as error:
+            result = {
+                'status': False,
+                'error': "{}".format(error)
             }
 
-        return await super(MessagesFromClientInChat, self).save(**data)
+        finally:
+            return result
 
     async def messages(self):
         return await self.objects.find({'chat': ObjectId(self.chat)}).order(['join', 1])

@@ -36,11 +36,11 @@ class Model(object):
 
             self.db = database.hold_connect(loop=self.loop)
 
-    async def get(self):
-
-        assert self.pk is not None
+    async def get(self) -> dict:
 
         try:
+            assert self.pk is not None
+
             self.result = await self.objects.find_one(
                 {
                     "_id": ObjectId(self.pk)
@@ -61,7 +61,7 @@ class Model(object):
         finally:
             return self.result
 
-    async def save(self, **kwargs):
+    async def save(self, **kwargs) -> dict:
         try:
             self.result = await self.objects.insert(
                 kwargs
@@ -78,7 +78,7 @@ class Model(object):
         finally:
             return self.result
 
-    async def delete(self):
+    async def delete(self) -> dict:
 
         try:
             if not await self.get():
