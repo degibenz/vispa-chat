@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-import json
 import os
+import json
 import asyncio
-from app import app
+
 from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop, TestClient
 
+from app import app
 from configs.db import DB
 
 os.environ['IS_TEST'] = 'True'
