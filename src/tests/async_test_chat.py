@@ -61,7 +61,7 @@ class TestChatApi(AioHTTPTestCase):
             data=data
         )
 
-        self.client_in_request = yield from request.json()
+        yield from request.json()
 
     def auth_client(self):
         data = json.dumps(self.data)

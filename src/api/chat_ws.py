@@ -29,14 +29,6 @@ __all__ = [
 
 loop = asyncio.get_event_loop()
 
-# TODO было бы хорошо, сделать тут полноценное удержание соединения
-database = DB()
-
-
-def init_model():
-    connection = database()
-    return connection
-
 
 class ChatWS(AbsView):
     ws = None
@@ -52,8 +44,11 @@ class ChatWS(AbsView):
     db = None
 
     def __init__(self, request):
-        if request.app['db']:
-            self.db = request.app['db']
+        try:
+            if request.app['db']:
+                self.db = request.app['db']
+        except(KeyError,):
+            pass
 
         self.chat_pk = ObjectId(request.match_info.get('id'))
         self.client_pk = ObjectId(request.match_info.get('client'))

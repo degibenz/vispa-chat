@@ -1,0 +1,15 @@
+{
+  "clients": {
+
+    "first": {
+      "email": "f292aca7e38069f53e8fdf48b6358c@gmail.com",
+      "password": "ae773d68cf6057069a2769b6530b61"
+    },
+
+    "second": {
+      "email": "sd92dfge35c6358c@gmail.com",
+      "password": "sd773d68cf6030b61"
+    }
+
+  }
+}
