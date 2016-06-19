@@ -52,7 +52,8 @@ class ChatWS(AbsView):
     db = None
 
     def __init__(self, request):
-        self.db = init_model()
+        if request.app['db']:
+            self.db = request.app['db']
 
         self.chat_pk = ObjectId(request.match_info.get('id'))
         self.client_pk = ObjectId(request.match_info.get('client'))
@@ -63,6 +64,9 @@ class ChatWS(AbsView):
         client = Client(
             pk=ObjectId(receiver)
         )
+
+        if self.db:
+            client.db = self.db
 
         if not await client.get():
             raise ClientNotFound
@@ -78,16 +82,12 @@ class ChatWS(AbsView):
             raise ClientNotFoundInChat
 
     async def prepare_msg(self):
-
         while True:
             msg = await self.ws.receive()
 
             if msg.tp == MsgType.text:
 
                 if msg.data == 'close':
-
-                    log.info("Client :: %s and exit from chat :: %s" % (self.client_pk, self.chat_pk))
-
                     await self.close_chat(for_me=True)
 
                 else:
@@ -105,6 +105,9 @@ class ChatWS(AbsView):
                         receiver_message=receiver
                     )
 
+                    if self.db:
+                        msg_obj.db = self.db
+
                     await msg_obj.save()
 
                     for client in self.agents:
@@ -121,6 +124,8 @@ class ChatWS(AbsView):
             raise TokeInHeadersNotFound
 
         token = Token()
+        if self.db:
+            token.db = self.db
 
         token_is = await token.objects.find_one({
             'token': token_in_header
@@ -133,6 +138,9 @@ class ChatWS(AbsView):
             pk=token_is.get('client')
         )
 
+        if self.db:
+            client.db = self.db
+
         self.client = await client.get()
 
         if not self.client:
@@ -143,6 +151,9 @@ class ChatWS(AbsView):
             chat=self.chat_pk,
             client=self.client_pk,
         )
+
+        if self.db:
+            chat_root.db = self.db
 
         q = {
             'chat': chat_root.chat,
@@ -173,18 +184,30 @@ class ChatWS(AbsView):
 
         await _notify()
 
+    async def _del_it(self, item):
+        client_in_chat = ClientsInChatRoom()
+
+        q = {
+            'chat': self.chat_pk,
+            'client': self.client_pk
+        }
+
+        await client_in_chat.objects.update(
+            q,
+            {'$set': {'online': False}},
+            upsert=False
+        )
+
+        await item.get('socket').close()
+        self.agents.remove(item)
+
     async def close_chat(self, for_me=False):
-
-        async def _del_it(item):
-            await item.get('socket').close()
-            self.agents.pop()
-
         for item in self.agents[:]:
             if for_me:
                 if item.get('chat_uid') == self.chat_pk and item.get('client_uid') == self.client_pk:
-                    await _del_it(item)
+                    await self._del_it(item)
             else:
-                await _del_it(item)
+                await self._del_it(item)
 
     async def get(self):
         try:
@@ -192,6 +215,8 @@ class ChatWS(AbsView):
             chat = Chat(
                 pk=self.chat_pk
             )
+            if self.db:
+                chat.db = self.db
 
             self.chat = await chat.get()
 
