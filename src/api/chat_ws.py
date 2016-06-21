@@ -17,15 +17,13 @@ from core.api import AbsView
 from core.model import ObjectId
 
 from models.chat import *
-from models.client import Token, Client
+from models.client import Client
 
 from core.exceptions import *
 
 __all__ = [
     'ChatWS'
 ]
-
-loop = asyncio.get_event_loop()
 
 
 class ChatWS(AbsView):
@@ -39,15 +37,7 @@ class ChatWS(AbsView):
 
     agents = []
 
-    db = None
-
     def __init__(self, request):
-        try:
-            if request.app['db']:
-                self.db = request.app['db']
-        except(KeyError,):
-            pass
-
         self.chat_pk = ObjectId(request.match_info.get('id'))
         self.client_pk = ObjectId(request.match_info.get('client'))
 
@@ -58,8 +48,8 @@ class ChatWS(AbsView):
             pk=ObjectId(receiver)
         )
 
-        if self.db:
-            client.db = self.db
+        if self.request.app['db']:
+            client.db = self.request.app['db']
 
         if not await client.get():
             raise ClientNotFound
@@ -99,8 +89,8 @@ class ChatWS(AbsView):
                             receiver_message=receiver
                         )
 
-                        if self.db:
-                            msg_obj.db = self.db
+                        if self.request.app['db']:
+                            msg_obj.db = self.request.app['db']
 
                         await msg_obj.save()
 
@@ -116,40 +106,18 @@ class ChatWS(AbsView):
 
         if not token_in_header:
             raise TokeInHeadersNotFound
+        else:
+            client = Client(
+                pk="{}".format(self.client_pk)
+            )
 
-        token = Token()
-        if self.db:
-            token.db = self.db
+            if self.request.app['db']:
+                client.db = self.request.app['db']
 
-        token_is = await token.objects.find_one({
-            'token': token_in_header
-        })
+            self.client = await client.get()
 
-        if not token_is:
-            raise TokenIsNotFound
-
-        client = Client(
-            pk=token_is.get('client')
-        )
-
-        if self.db:
-            client.db = self.db
-
-        self.client = await client.get()
-
-        if not self.client:
-            raise ClientNotFoundViaToken
-
-    async def cache_ws(self):
-        client_in_room = ClientsInChatRoom(
-            chat=self.chat_pk,
-            client=self.client_pk,
-        )
-
-        if self.db:
-            client_in_room.db = self.db
-
-        await client_in_room.add_person_to_chat()
+            if not str(await client.token) == str(token_in_header):
+                raise TokenIsNotFound
 
     async def notify(self, item: dict, message: str, receiver=None):
 
@@ -179,6 +147,8 @@ class ChatWS(AbsView):
             'client': self.client_pk
         }
 
+        if self.request.app['db']:
+            client_in_chat.db = self.request.app['db']
         await client_in_chat.objects.update(
             q,
             {'$set': {'online': False}},
@@ -198,14 +168,12 @@ class ChatWS(AbsView):
 
     async def get(self):
         try:
-            await self.check_client()
-
             chat = Chat(
                 pk=self.chat_pk
             )
 
-            if self.db:
-                chat.db = self.db
+            if self.request.app['db']:
+                chat.db = self.request.app['db']
 
             self.chat = await chat.get()
 
@@ -213,7 +181,17 @@ class ChatWS(AbsView):
 
             await self.ws.prepare(self.request)
 
-            await self.cache_ws()
+            await self.check_client()
+
+            client_in_room = ClientsInChatRoom(
+                chat=self.chat_pk,
+                client=self.client_pk,
+            )
+
+            if self.request.app['db']:
+                client_in_room.db = self.request.app['db']
+
+            await client_in_room.add_person_to_chat()
 
             self.agents.append(
                 {
@@ -222,9 +200,6 @@ class ChatWS(AbsView):
                     "socket": self.ws
                 }
             )
-
-            if not self.chat:
-                raise ChatNotFound
 
             await asyncio.gather(self.prepare_msg())
 

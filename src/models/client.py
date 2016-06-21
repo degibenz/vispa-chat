@@ -28,10 +28,11 @@ class Client(Model):
 
     @property
     async def token(self):
-        token_is = Token()
+        token_is = Token(
+            client_uid=self.pk
+        )
 
         token_is.db = self.db
-        token_is.client_uid = self.pk
 
         return await token_is.key()
 
@@ -97,10 +98,13 @@ class Token(Model):
     async def key(self):
         assert self.client_uid is not None
 
+        q = {
+            'client': ObjectId(self.client_uid)
+        }
+
+        # print(::q)
         search_key = await self.objects.find_one(
-            {
-                'client': ObjectId(self.client_uid)
-            }
+            q
         )
 
         if search_key:

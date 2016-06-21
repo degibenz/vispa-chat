@@ -10,6 +10,7 @@ from app import app
 from configs.db import DB
 
 os.environ['IS_TEST'] = 'True'
+os.environ['MONGODB_DB_NAME'] = 'async_chat_test'
 
 
 class TestChatApi(AioHTTPTestCase):
@@ -86,10 +87,10 @@ class TestChatApi(AioHTTPTestCase):
         )
 
         #   Create request for create second client
-        second_client_auth_request = yield from self.client.post(
-            path="/client/create/",
-            data=json.dumps(second_client)
-        )
+        # second_client_auth_request = yield from self.client.post(
+        #     path="/client/create/",
+        #     data=json.dumps(second_client)
+        # )
 
         yield
 
@@ -107,14 +108,14 @@ class TestChatApi(AioHTTPTestCase):
         self.first_token = self.first_client.get('token')
 
         #   auth  and get token for second client
-        second_client_request = yield from self.client.post(
-            path="/client/auth/",
-            data=json.dumps(second_client)
-        )
-
-        self.second_client = yield from second_client_request.json()
-
-        self.second_token = self.second_client.get('token')
+        # second_client_request = yield from self.client.post(
+        #     path="/client/auth/",
+        #     data=json.dumps(second_client)
+        # )
+        #
+        # self.second_client = yield from second_client_request.json()
+        #
+        # self.second_token = self.second_client.get('token')
 
     def install_chat(self):
         request = yield from self.client.post(
@@ -147,9 +148,11 @@ class TestChatApi(AioHTTPTestCase):
         chat = os.environ['TEST_CHAT_PK']
         path = "/chat/ws/{}/{}/".format(chat, self.first_client.get('client_id'))
 
+        print(self.first_headers)
+
         request = await self.client.ws_connect(
             path=path,
-            headers=self.first_headers,
+            headers=self.first_headers
         )
 
         # msg = await request.receive()
