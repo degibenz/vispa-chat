@@ -4,9 +4,9 @@ import json
 import asyncio
 
 from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop, TestClient
-from aiohttp import errors, hdrs, helpers, websocket, websocket_client
 
 from app import app
+
 from configs.db import DB
 
 os.environ['IS_TEST'] = 'True'
@@ -28,7 +28,10 @@ class TestChatApi(AioHTTPTestCase):
     client_in_request = None
 
     def get_app(self, loop):
-        server = app(loop=loop)
+
+        server = app(
+            loop=loop
+        )
 
         server['db'] = self.database(
             loop=loop
@@ -141,39 +144,29 @@ class TestChatApi(AioHTTPTestCase):
 
     @unittest_run_loop
     async def test_open_ws_connect(self):
-        # chat = os.environ['TEST_CHAT_PK']
-        chat = '5766a7b1f4e00b340bcc7447'
-        path = "/chat/ws/{}/{}/".format(chat, self.first_client.get('client_id'))
-
-        print(self.first_headers)
-        request = await self.client.ws_connect(
-            path=path,
-        )
-
-        content = await request.text()
-
-    @unittest_run_loop
-    async def test_close_ws_connect(self):
-        msg = "close"
         chat = os.environ['TEST_CHAT_PK']
         path = "/chat/ws/{}/{}/".format(chat, self.first_client.get('client_id'))
 
-        print(self.first_headers)
         request = await self.client.ws_connect(
             path=path,
+            headers=self.first_headers,
         )
 
-        content = await request.text()
-
+        # msg = await request.receive()
+        # print("MSG IS ", msg)
 
     # @unittest_run_loop
-    # async def test_send_message_to_chat(self):
+    # async def test_close_ws_connect(self):
+    #     pass
+        #
+        # @unittest_run_loop
+        # async def test_send_message_to_chat(self):
         #     pass
         #
-    # @unittest_run_loop
-    # async def test_send_message_to_myself(self):
+        # @unittest_run_loop
+        # async def test_send_message_to_myself(self):
         #     pass
         #
-    # @unittest_run_loop
-    # async def test_send_private_message(self):
+        # @unittest_run_loop
+        # async def test_send_private_message(self):
         #     pass

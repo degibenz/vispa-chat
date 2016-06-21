@@ -6,6 +6,7 @@ from aiohttp import web
 
 from api.client_api import *
 from api.chat_api import *
+from api.chat_ws import *
 
 __all__ = [
     'app'
@@ -26,5 +27,7 @@ def app(loop):
     app_server.router.add_route('GET', '/chat/list/', GetChatList)
     app_server.router.add_route('POST', '/chat/create/', CreateChat)
     app_server.router.add_route('POST', '/chat/delete/', DeleteChat)
+
+    app_server.router.add_route('GET', '/chat/ws/{id}/{client}/', ChatWS)
 
     return app_server

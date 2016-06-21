@@ -13,8 +13,6 @@ import traceback
 
 from aiohttp import web, MsgType
 
-from configs.db import DB
-
 from core.api import AbsView
 from core.model import ObjectId
 
@@ -78,39 +76,40 @@ class ChatWS(AbsView):
 
     async def prepare_msg(self):
         while True:
-            msg = await self.ws.receive()
+            if not self.ws.closed:
+                msg = await self.ws.receive()
 
-            if msg.tp == MsgType.text:
+                if msg.tp == MsgType.text:
 
-                if msg.data == 'close':
-                    await self.close_chat(for_me=True)
+                    if msg.data == 'close':
+                        await self.close_chat(for_me=True)
 
-                else:
-                    data = json.loads(msg.data)
+                    else:
+                        data = json.loads(msg.data)
 
-                    receiver = data.get('receiver', None)
+                        receiver = data.get('receiver', None)
 
-                    if receiver:
-                        await self.check_receiver(receiver)
+                        if receiver:
+                            await self.check_receiver(receiver)
 
-                    msg_obj = MessagesFromClientInChat(
-                        chat=self.chat.get('_id'),
-                        client=self.client_pk,
-                        msg=data.get('msg'),
-                        receiver_message=receiver
-                    )
-
-                    if self.db:
-                        msg_obj.db = self.db
-
-                    await msg_obj.save()
-
-                    for client in self.agents:
-                        await self.notify(
-                            client,
-                            msg_obj.message_content,
-                            receiver
+                        msg_obj = MessagesFromClientInChat(
+                            chat=self.chat.get('_id'),
+                            client=self.client_pk,
+                            msg=data.get('msg'),
+                            receiver_message=receiver
                         )
+
+                        if self.db:
+                            msg_obj.db = self.db
+
+                        await msg_obj.save()
+
+                        for client in self.agents:
+                            await self.notify(
+                                client,
+                                msg_obj.message_content,
+                                receiver
+                            )
 
     async def check_client(self):
         token_in_header = self.request.__dict__.get('headers').get('AUTHORIZATION', None)
@@ -142,22 +141,15 @@ class ChatWS(AbsView):
             raise ClientNotFoundViaToken
 
     async def cache_ws(self):
-        chat_root = ClientsInChatRoom(
+        client_in_room = ClientsInChatRoom(
             chat=self.chat_pk,
             client=self.client_pk,
         )
 
         if self.db:
-            chat_root.db = self.db
+            client_in_room.db = self.db
 
-        q = {
-            'chat': chat_root.chat,
-            'client': chat_root.client,
-            'online': True
-        }
-
-        if not await chat_root.objects.find_one(q):
-            await chat_root.save()
+        await client_in_room.add_person_to_chat()
 
     async def notify(self, item: dict, message: str, receiver=None):
 
@@ -206,10 +198,12 @@ class ChatWS(AbsView):
 
     async def get(self):
         try:
+            await self.check_client()
 
             chat = Chat(
                 pk=self.chat_pk
             )
+
             if self.db:
                 chat.db = self.db
 

@@ -109,7 +109,7 @@ class Chat(Model):
 
 
 class ClientsInChatRoom(Model):
-    collection = 'clients-in-chat'
+    collection = 'clients_in_chat'
 
     chat = Chat
     client = Client
@@ -124,15 +124,26 @@ class ClientsInChatRoom(Model):
 
         super(ClientsInChatRoom, self).__init__()
 
-    async def save(self, **kwargs) -> dict:
+    async def add_person_to_chat(self):
+        q = {
+            'chat': self.chat,
+            'client': self.client,
+        }
+
+        if not await self.objects.find_one(q):
+            await self.save()
+
+    async def save(self, **kwargs):
         result = dict
         try:
+
             data = {
                 'chat': self.chat,
                 'client': self.client,
                 'join_at': self.join_at,
                 'online': self.online,
             }
+
             result = await super(ClientsInChatRoom, self).save(**data)
         except(Exception, AssertionError) as error:
             result = {
@@ -167,7 +178,7 @@ class MessagesFromClientInChat(Model):
 
         super(MessagesFromClientInChat, self).__init__()
 
-    async def save(self, **kwargs) -> dict:
+    async def save(self, **kwargs):
         result = {}
 
         try:

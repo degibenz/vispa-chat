@@ -19,7 +19,9 @@ class TestChatApi(AioHTTPTestCase):
     client_in_request = None
 
     def get_app(self, loop):
-        server = app(loop=loop)
+        server = app(
+            loop=loop
+        )
 
         server['db'] = self.database(
             loop=loop
