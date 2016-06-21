@@ -19,11 +19,6 @@ Chat/Auth 8080 port
 * POST /chat/create/ - создать новый чат
 * POST /chat/delete/ - удаляет запись о чате 
 
-
-
-WS-chat 8090 port
----------------------------
-
 Передача сообщений между пользователями осуществляется по WebScokets
 
 GET /chat/ws/{chat_uid}/{client_uid}/ - адрес для подключения клиента
