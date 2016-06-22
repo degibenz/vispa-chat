@@ -84,11 +84,11 @@ class TestChatApi(AioHTTPTestCase):
             data=json.dumps(first_client)
         )
 
-        #   Create request for create second client
-        # second_client_auth_request = yield from self.client.post(
-        #     path="/client/create/",
-        #     data=json.dumps(second_client)
-        # )
+        # Create request for create second client
+        second_client_auth_request = yield from self.client.post(
+            path="/client/create/",
+            data=json.dumps(second_client)
+        )
 
         yield
 
@@ -106,14 +106,14 @@ class TestChatApi(AioHTTPTestCase):
         self.first_token = self.first_client.get('token')
 
         #   auth  and get token for second client
-        # second_client_request = yield from self.client.post(
-        #     path="/client/auth/",
-        #     data=json.dumps(second_client)
-        # )
-        #
-        # self.second_client = yield from second_client_request.json()
-        #
-        # self.second_token = self.second_client.get('token')
+        second_client_request = yield from self.client.post(
+            path="/client/auth/",
+            data=json.dumps(second_client)
+        )
+
+        self.second_client = yield from second_client_request.json()
+
+        self.second_token = self.second_client.get('token')
 
     def install_chat(self):
         request = yield from self.client.post(
@@ -125,8 +125,10 @@ class TestChatApi(AioHTTPTestCase):
         os.environ['TEST_CHAT_PK'] = result.get('chat')
 
     def delete_test_chat(self):
+        chat = os.environ['TEST_CHAT_PK']
+
         data = json.dumps({
-            'id': self.chat_pk
+            'id': chat
         })
 
         request = yield from self.client.post(
@@ -141,34 +143,37 @@ class TestChatApi(AioHTTPTestCase):
         self.delete_test_chat()
         super(TestChatApi, self).tearDown()
 
+    @property
+    def chat_path(self):
+        chat = os.environ['TEST_CHAT_PK']
+        path = "/chat/ws/{}/{}/".format(chat, self.first_client.get('client_id'))
+        return path
+
+    @property
+    def second_path(self):
+        chat = os.environ['TEST_CHAT_PK']
+        path = "/chat/ws/{}/{}/".format(chat, self.second_client.get('client_id'))
+        return path
+
     @unittest_run_loop
     async def test_open_ws_connect(self):
         print("========================")
         print("test_open_ws_connect")
 
-        chat = os.environ['TEST_CHAT_PK']
-        path = "/chat/ws/{}/{}/".format(chat, self.first_client.get('client_id'))
-
         request = await self.client.ws_connect(
-            path=path,
+            path=self.chat_path,
             headers=self.first_headers
         )
 
         assert request._closing is False
-
 
     @unittest_run_loop
     async def test_send_message(self):
         print("========================")
         print("test_send_message")
 
-        chat = os.environ['TEST_CHAT_PK']
-        path = "/chat/ws/{}/{}/".format(chat, self.first_client.get('client_id'))
-
         request = await self.client.ws_connect(
-            path=path,
+            path=self.chat_path,
             headers=self.first_headers
         )
         request.send_str("{'msg': 'Hello'}")
-
-
