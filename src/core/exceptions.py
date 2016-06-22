@@ -4,8 +4,13 @@ __author__ = 'degibenz'
 
 
 class ObjectNotFound(Exception):
+    cls_name = None
+
+    def __init__(self, cls_name):
+        self.cls_name = cls_name
+
     def __str__(self):
-        return "Object not found"
+        return "Object :: {} not found".format(self.cls_name)
 
 
 class NotPermissions(Exception):

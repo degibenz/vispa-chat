@@ -45,14 +45,13 @@ class TestChatApi(AioHTTPTestCase):
 
         self.database = DB()
         self.loop = asyncio.new_event_loop()
-
+        self.loop.set_debug(False)
         self.app = self.get_app(
             self.loop
         )
 
         self.client = TestClient(
             self.app,
-            'ws'
         )
 
         self.loop.run_until_complete(self.install_client())
@@ -155,8 +154,8 @@ class TestChatApi(AioHTTPTestCase):
             headers=self.first_headers
         )
 
-        # msg = await request.receive()
-        # print("MSG IS ", msg)
+        msg = await request.receive()
+        print("MSG IS ", msg)
 
     # @unittest_run_loop
     # async def test_close_ws_connect(self):

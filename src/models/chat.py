@@ -130,7 +130,7 @@ class ClientsInChatRoom(Model):
             'client': self.client,
         }
 
-        if not await self.objects.find_one(q):
+        if not await self.get(**q):
             await self.save()
 
     async def save(self, **kwargs):

@@ -51,18 +51,20 @@ class ChatWS(AbsView):
         if self.request.app['db']:
             client.db = self.request.app['db']
 
-        if not await client.get():
-            raise ClientNotFound
+        await client.get()
 
         client_in_chat = ClientsInChatRoom()
+
+        if self.request.app['db']:
+            client_in_chat.db = self.request.app['db']
 
         q = {
             'chat': self.chat_pk,
             'client': ObjectId(receiver)
         }
 
-        if not await client_in_chat.objects.find_one(q):
-            raise ClientNotFoundInChat
+        if not await client_in_chat.get(**q):
+            client_in_chat.save()
 
     async def prepare_msg(self):
         while True:
@@ -115,6 +117,8 @@ class ChatWS(AbsView):
                 client.db = self.request.app['db']
 
             self.client = await client.get()
+            if not self.client:
+                raise ObjectNotFound(cls_name=Client)
 
             if not str(await client.token) == str(token_in_header):
                 raise TokenIsNotFound
@@ -181,6 +185,7 @@ class ChatWS(AbsView):
 
             await self.ws.prepare(self.request)
 
+            print("check_client")
             await self.check_client()
 
             client_in_room = ClientsInChatRoom(

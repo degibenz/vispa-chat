@@ -36,19 +36,22 @@ class Model(object):
 
             self.db = database(loop=self.loop)
 
-    async def get(self) -> dict:
+    async def get(self, **kwargs) -> dict:
 
         try:
-            assert self.pk is not None
+            if self.pk:
+                self.result = await self.objects.find_one(
+                    {
+                        "_id": ObjectId(self.pk)
+                    }
+                )
+            else:
+                self.result = await self.objects.find_one(
+                    kwargs
+                )
 
-            self.result = await self.objects.find_one(
-                {
-                    "_id": ObjectId(self.pk)
-                }
-            )
-
-            if not self.result:
-                raise ObjectNotFound
+            # if not self.result:
+            #     raise ObjectNotFound(self.__class__.__name__)
 
         except(Exception, AssertionError) as error:
             self.result = {
