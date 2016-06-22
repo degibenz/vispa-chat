@@ -72,7 +72,6 @@ class ChatWS(AbsView):
             client_in_chat.save()
 
     async def prepare_msg(self):
-        print("try for send message")
         while True:
             if not self.ws.closed:
 

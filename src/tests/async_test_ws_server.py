@@ -198,7 +198,10 @@ class TestChatApi(AioHTTPTestCase):
         for item in msgs:
             msg = '{"msg": "%s"}' % item
             first_client.send_str(msg)
-        # response = await first_client.receive()
+
         msg = await second_client.receive()
         print("Second client receive messages")
         print(msg)
+
+        await first_client.close()
+        await second_client.close()
