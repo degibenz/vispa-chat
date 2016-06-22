@@ -34,10 +34,15 @@ class ChatWS(AbsView):
 
     chat_pk = None
     client_pk = None
-
+    db = None
     agents = []
 
     def __init__(self, request):
+        try:
+            self.db = request.app['db']
+        except(KeyError, ):
+            pass
+
         self.chat_pk = ObjectId(request.match_info.get('id'))
         self.client_pk = ObjectId(request.match_info.get('client'))
 
@@ -48,15 +53,15 @@ class ChatWS(AbsView):
             pk=ObjectId(receiver)
         )
 
-        if self.request.app['db']:
-            client.db = self.request.app['db']
+        if self.db:
+            client.db = self.db
 
         await client.get()
 
         client_in_chat = ClientsInChatRoom()
 
-        if self.request.app['db']:
-            client_in_chat.db = self.request.app['db']
+        if self.db:
+            client_in_chat.db = self.db
 
         q = {
             'chat': self.chat_pk,
@@ -67,8 +72,10 @@ class ChatWS(AbsView):
             client_in_chat.save()
 
     async def prepare_msg(self):
+        print("try for send message")
         while True:
             if not self.ws.closed:
+
                 msg = await self.ws.receive()
 
                 if msg.tp == MsgType.text:
@@ -91,8 +98,8 @@ class ChatWS(AbsView):
                             receiver_message=receiver
                         )
 
-                        if self.request.app['db']:
-                            msg_obj.db = self.request.app['db']
+                        if self.db:
+                            msg_obj.db = self.db
 
                         await msg_obj.save()
 
@@ -104,7 +111,7 @@ class ChatWS(AbsView):
                             )
 
     async def check_client(self):
-        token_in_header = self.request.__dict__.get('headers').get('AUTHORIZATION', None)
+        token_in_header = self.request.__dict__.get('headers').get('AUTHORIZATION', '2ca1e950-6b3a-4132-ab02-1c1cce51e61f')
 
         if not token_in_header:
             raise TokeInHeadersNotFound
@@ -113,8 +120,8 @@ class ChatWS(AbsView):
                 pk="{}".format(self.client_pk)
             )
 
-            if self.request.app['db']:
-                client.db = self.request.app['db']
+            if self.db:
+                client.db = self.db
 
             self.client = await client.get()
             if not self.client:
@@ -151,8 +158,9 @@ class ChatWS(AbsView):
             'client': self.client_pk
         }
 
-        if self.request.app['db']:
-            client_in_chat.db = self.request.app['db']
+        if self.db:
+            client_in_chat.db = self.db
+
         await client_in_chat.objects.update(
             q,
             {'$set': {'online': False}},
@@ -176,8 +184,8 @@ class ChatWS(AbsView):
                 pk=self.chat_pk
             )
 
-            if self.request.app['db']:
-                chat.db = self.request.app['db']
+            if self.db:
+                chat.db = self.db
 
             self.chat = await chat.get()
 
@@ -185,7 +193,6 @@ class ChatWS(AbsView):
 
             await self.ws.prepare(self.request)
 
-            print("check_client")
             await self.check_client()
 
             client_in_room = ClientsInChatRoom(
@@ -193,8 +200,8 @@ class ChatWS(AbsView):
                 client=self.client_pk,
             )
 
-            if self.request.app['db']:
-                client_in_room.db = self.request.app['db']
+            if self.db:
+                client_in_room.db = self.db
 
             await client_in_room.add_person_to_chat()
 
@@ -209,8 +216,6 @@ class ChatWS(AbsView):
             await asyncio.gather(self.prepare_msg())
 
         except(Exception,) as error:
-
-            traceback.print_exc()
 
             self.response = {
                 'status': False,

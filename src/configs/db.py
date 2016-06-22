@@ -20,7 +20,6 @@ class DB(object):
     db = None
 
     def __call__(self, loop=None):
-        print(MONGODB_DB_NAME)
         if not self.db:
             self.db = ma.AsyncIOMotorClient(
                 '%s:%s' % (MONGODB_SERVER_HOST, MONGODB_SERVER_PORT),

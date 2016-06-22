@@ -29,7 +29,6 @@ class TestChatApi(AioHTTPTestCase):
     client_in_request = None
 
     def get_app(self, loop):
-
         server = app(
             loop=loop
         )
@@ -144,31 +143,32 @@ class TestChatApi(AioHTTPTestCase):
 
     @unittest_run_loop
     async def test_open_ws_connect(self):
+        print("========================")
+        print("test_open_ws_connect")
+
         chat = os.environ['TEST_CHAT_PK']
         path = "/chat/ws/{}/{}/".format(chat, self.first_client.get('client_id'))
-
-        print(self.first_headers)
 
         request = await self.client.ws_connect(
             path=path,
             headers=self.first_headers
         )
 
-        msg = await request.receive()
-        print("MSG IS ", msg)
+        assert request._closing is False
 
-    # @unittest_run_loop
-    # async def test_close_ws_connect(self):
-    #     pass
-        #
-        # @unittest_run_loop
-        # async def test_send_message_to_chat(self):
-        #     pass
-        #
-        # @unittest_run_loop
-        # async def test_send_message_to_myself(self):
-        #     pass
-        #
-        # @unittest_run_loop
-        # async def test_send_private_message(self):
-        #     pass
+
+    @unittest_run_loop
+    async def test_send_message(self):
+        print("========================")
+        print("test_send_message")
+
+        chat = os.environ['TEST_CHAT_PK']
+        path = "/chat/ws/{}/{}/".format(chat, self.first_client.get('client_id'))
+
+        request = await self.client.ws_connect(
+            path=path,
+            headers=self.first_headers
+        )
+        request.send_str("{'msg': 'Hello'}")
+
+

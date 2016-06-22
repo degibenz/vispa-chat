@@ -50,9 +50,6 @@ class Model(object):
                     kwargs
                 )
 
-            # if not self.result:
-            #     raise ObjectNotFound(self.__class__.__name__)
-
         except(Exception, AssertionError) as error:
             self.result = {
                 'status': False,

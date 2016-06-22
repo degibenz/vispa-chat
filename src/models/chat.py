@@ -59,7 +59,7 @@ class Chat(Model):
             return result
 
     @property
-    async def list_clients(self) -> list:
+    async def list_clients(self):
 
         result = []
 
@@ -75,8 +75,8 @@ class Chat(Model):
 
                 result.append(
                     {
-                        'chat-id': "%s" % doc.get('_id'),
-                        'author': "%s" % doc.get('author')
+                        'chat-id': "{}".format(doc.get('_id')),
+                        'author': "{}".format(doc.get('author'))
                     }
                 )
 
@@ -120,7 +120,7 @@ class ClientsInChatRoom(Model):
     def __init__(self, chat: ObjectId = None, client: ObjectId = None):
         self.chat = chat
         self.client = client
-        self.join_at = datetime.datetime.now()
+        self.join_at = datetime.datetime
 
         super(ClientsInChatRoom, self).__init__()
 
@@ -140,7 +140,7 @@ class ClientsInChatRoom(Model):
             data = {
                 'chat': self.chat,
                 'client': self.client,
-                'join_at': self.join_at,
+                'join_at': self.join_at.now(),
                 'online': self.online,
             }
 
