@@ -155,25 +155,50 @@ class TestChatApi(AioHTTPTestCase):
         path = "/chat/ws/{}/{}/".format(chat, self.second_client.get('client_id'))
         return path
 
-    @unittest_run_loop
-    async def test_open_ws_connect(self):
-        print("========================")
-        print("test_open_ws_connect")
+    # @unittest_run_loop
+    # async def test_open_ws_connect(self):
+    #     print("========================")
+    #     print("test_open_ws_connect")
+    #
+    #     request = await self.client.ws_connect(
+    #         path=self.chat_path,
+    #         headers=self.first_headers
+    #     )
+    #
+    #     assert request._closing is False
+    #
+    # @unittest_run_loop
+    # async def test_send_message(self):
+    #     print("========================")
+    #     print("test_send_message")
+    #
+    #     request = await self.client.ws_connect(
+    #         path=self.chat_path,
+    #         headers=self.first_headers
+    #     )
+    #     request.send_str("{'msg': 'Hello'}")
 
-        request = await self.client.ws_connect(
+    @unittest_run_loop
+    async def test_chat_btw_users(self):
+        print("========================")
+        print("test_chat_btw_users")
+
+        first_client = await self.client.ws_connect(
             path=self.chat_path,
             headers=self.first_headers
         )
 
-        assert request._closing is False
-
-    @unittest_run_loop
-    async def test_send_message(self):
-        print("========================")
-        print("test_send_message")
-
-        request = await self.client.ws_connect(
+        second_client = await self.client.ws_connect(
             path=self.chat_path,
-            headers=self.first_headers
+            headers=self.second_headers
         )
-        request.send_str("{'msg': 'Hello'}")
+
+        msgs = ["Hello second client ", "How are you"]
+
+        for item in msgs:
+            msg = '{"msg": "%s"}' % item
+            first_client.send_str(msg)
+        # response = await first_client.receive()
+        msg = await second_client.receive()
+        print("Second client receive messages")
+        print(msg)

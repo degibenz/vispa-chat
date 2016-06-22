@@ -213,6 +213,7 @@ class ChatWS(AbsView):
                 }
             )
 
+            await self.ws.send_str("{'msg': 'hello'}")
             await asyncio.gather(self.prepare_msg())
 
         except(Exception,) as error:
