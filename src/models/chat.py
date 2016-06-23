@@ -126,14 +126,16 @@ class ClientsInChatRoom(Model):
 
     async def add_person_to_chat(self):
         q = {
-            'chat': self.chat,
-            'client': self.client,
+            'chat': ObjectId(self.chat),
+            'client': ObjectId(self.client),
         }
+
+        print("Add person to chat :: ", q)
 
         if not await self.get(**q):
             await self.save()
 
-    async def save(self, **kwargs):
+    async def save(self, **kwargs) -> dict:
         result = dict
         try:
 
@@ -178,8 +180,8 @@ class MessagesFromClientInChat(Model):
 
         super(MessagesFromClientInChat, self).__init__()
 
-    async def save(self, **kwargs):
-        result = {}
+    async def save(self, **kwargs) -> dict:
+        result = dict
 
         try:
             if str(self.client) is str(self.receiver_message):
@@ -192,6 +194,8 @@ class MessagesFromClientInChat(Model):
                     'msg': self.message_content,
                     'join': self.send_at.now()
                 }
+
+                print("Save new message ::", data)
 
                 result = await super(MessagesFromClientInChat, self).save(**data)
         except(Exception,) as error:

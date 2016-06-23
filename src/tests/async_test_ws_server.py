@@ -62,7 +62,7 @@ class TestChatApi(AioHTTPTestCase):
             'Content-Type': 'application/json',
         }
 
-        self.second_token = {
+        self.second_headers = {
             'Authorization': self.second_token,
             'Content-Type': 'application/json',
         }
@@ -189,7 +189,7 @@ class TestChatApi(AioHTTPTestCase):
         )
 
         second_client = await self.client.ws_connect(
-            path=self.chat_path,
+            path=self.second_path,
             headers=self.second_headers
         )
 
@@ -199,9 +199,9 @@ class TestChatApi(AioHTTPTestCase):
             msg = '{"msg": "%s"}' % item
             first_client.send_str(msg)
 
-        msg = await second_client.receive()
-        print("Second client receive messages")
-        print(msg)
+        # msg = await second_client.receive()
+        # print("Second client receive messages")
+        # print(msg)
 
-        await first_client.close()
-        await second_client.close()
+        # await first_client.close()
+        # await second_client.close()

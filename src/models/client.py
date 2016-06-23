@@ -19,7 +19,7 @@ class Client(Model):
     client_email = None
     password = None
 
-    def __init__(self, email=None, password=None, pk=None):
+    def __init__(self, email=None, password=None, pk: ObjectId = None):
         self.pk = pk
         self.client_email = email
         self.password = password
@@ -55,12 +55,11 @@ class Client(Model):
             token_is = Token()
             token_is.db = self.db
 
-            search_key = await token_is.objects.find_one(
-                {
-                    'client': ObjectId(self.pk),
-                    'token': "{}".format(await self.token)
-                }
-            )
+            search_q = {
+                'client': ObjectId(self.pk),
+                'token': "{}".format(await self.token)
+            }
+            search_key = await token_is.get(**search_q)
 
             token_is.pk = search_key.get('_id')
 
@@ -102,10 +101,7 @@ class Token(Model):
             'client': ObjectId(self.client_uid)
         }
 
-        # print(::q)
-        search_key = await self.objects.find_one(
-            q
-        )
+        search_key = await self.get(**q)
 
         if search_key:
             key = "{}".format(search_key.get('token'))

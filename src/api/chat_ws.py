@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 __author__ = 'degibenz'
-
+import os
 import logging
 
 log = logging.getLogger(__name__)
@@ -9,17 +9,15 @@ log.setLevel(logging.DEBUG)
 
 import json
 import asyncio
-import traceback
 
 from aiohttp import web, MsgType
 
 from core.api import AbsView
 from core.model import ObjectId
+from core.exceptions import *
 
 from models.chat import *
 from models.client import Client
-
-from core.exceptions import *
 
 __all__ = [
     'ChatWS'
@@ -40,7 +38,7 @@ class ChatWS(AbsView):
     def __init__(self, request):
         try:
             self.db = request.app['db']
-        except(KeyError, ):
+        except(KeyError,):
             pass
 
         self.chat_pk = ObjectId(request.match_info.get('id'))
@@ -72,51 +70,56 @@ class ChatWS(AbsView):
             client_in_chat.save()
 
     async def prepare_msg(self):
-        while True:
-            if not self.ws.closed:
+        if not self.ws.closed:
 
-                msg = await self.ws.receive()
+            msg = await self.ws.receive()
+            if msg.tp == MsgType.text:
+                content = json.loads(msg.data)
 
-                if msg.tp == MsgType.text:
+                system_operation = content.get('system_operation', None)
 
-                    if msg.data == 'close':
-                        await self.close_chat(for_me=True)
+                if system_operation == 'close':
+                    await self.close_chat(for_me=True)
 
-                    else:
-                        data = json.loads(msg.data)
+                else:
+                    data = json.loads(msg.data)
 
-                        receiver = data.get('receiver', None)
+                    receiver = data.get('receiver', None)
 
-                        if receiver:
-                            await self.check_receiver(receiver)
+                    if receiver:
+                        await self.check_receiver(receiver)
 
-                        msg_obj = MessagesFromClientInChat(
-                            chat=self.chat.get('_id'),
-                            client=self.client_pk,
-                            msg=data.get('msg'),
-                            receiver_message=receiver
+                    msg_obj = MessagesFromClientInChat(
+                        chat=self.chat.get('_id'),
+                        client=self.client_pk,
+                        msg=data.get('msg'),
+                        receiver_message=receiver
+                    )
+
+                    if self.db:
+                        msg_obj.db = self.db
+
+                    await msg_obj.save()
+
+                    for client in self.agents:
+                        await self.notify(
+                            client,
+                            msg_obj.message_content,
+                            receiver
                         )
 
-                        if self.db:
-                            msg_obj.db = self.db
-
-                        await msg_obj.save()
-
-                        for client in self.agents:
-                            await self.notify(
-                                client,
-                                msg_obj.message_content,
-                                receiver
-                            )
-
     async def check_client(self):
-        token_in_header = self.request.__dict__.get('headers').get('AUTHORIZATION', '2ca1e950-6b3a-4132-ab02-1c1cce51e61f')
+
+        token_in_header = self.request.__dict__.get('headers').get('AUTHORIZATION', None)
+
+        # if not bool(os.getenv('IS_TEST')):
+        #     token_in_header = 'c97868d8-ccd5-43e4-914c-fe87e9438ec0'
 
         if not token_in_header:
             raise TokeInHeadersNotFound
         else:
             client = Client(
-                pk="{}".format(self.client_pk)
+                pk=self.client_pk
             )
 
             if self.db:
@@ -150,6 +153,8 @@ class ChatWS(AbsView):
         await _notify()
 
     async def _del_it(self, item):
+        print("Mark client :: {} in chat :: {} as offline".format(self.client_pk, self.chat_pk))
+
         client_in_chat = ClientsInChatRoom()
 
         q = {
@@ -212,7 +217,6 @@ class ChatWS(AbsView):
                 }
             )
 
-            await self.ws.send_str("{'msg': 'hello'}")
             await asyncio.gather(self.prepare_msg())
 
         except(Exception,) as error:
