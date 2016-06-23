@@ -155,18 +155,23 @@ class TestChatApi(AioHTTPTestCase):
         path = "/chat/ws/{}/{}/".format(chat, self.second_client.get('client_id'))
         return path
 
-    # @unittest_run_loop
-    # async def test_open_ws_connect(self):
-    #     print("========================")
-    #     print("test_open_ws_connect")
-    #
-    #     request = await self.client.ws_connect(
-    #         path=self.chat_path,
-    #         headers=self.first_headers
-    #     )
-    #
-    #     assert request._closing is False
-    #
+    @unittest_run_loop
+    async def test_open_ws_connect(self):
+        print("========================")
+        print("test_open_ws_connect")
+
+        request = await self.client.ws_connect(
+            path=self.chat_path,
+            headers=self.first_headers
+        )
+
+        assert request._closing is False
+
+        request.send_str(data='{"msg": "Hello"}')
+        msg = await request.receive()
+        print("Second client receive messages")
+        print(msg)
+
     # @unittest_run_loop
     # async def test_send_message(self):
     #     print("========================")
@@ -178,26 +183,26 @@ class TestChatApi(AioHTTPTestCase):
     #     )
     #     request.send_str("{'msg': 'Hello'}")
 
-    @unittest_run_loop
-    async def test_chat_btw_users(self):
-        print("========================")
-        print("test_chat_btw_users")
-
-        first_client = await self.client.ws_connect(
-            path=self.chat_path,
-            headers=self.first_headers
-        )
-
-        second_client = await self.client.ws_connect(
-            path=self.second_path,
-            headers=self.second_headers
-        )
-
-        msgs = ["Hello second client ", "How are you"]
-
-        for item in msgs:
-            msg = '{"msg": "%s"}' % item
-            first_client.send_str(msg)
+    # @unittest_run_loop
+    # async def test_chat_btw_users(self):
+    #     print("========================")
+    #     print("test_chat_btw_users")
+    #
+    #     first_client = await self.client.ws_connect(
+    #         path=self.chat_path,
+    #         headers=self.first_headers
+    #     )
+    #
+    #     second_client = await self.client.ws_connect(
+    #         path=self.second_path,
+    #         headers=self.second_headers
+    #     )
+    #
+    #     msgs = ["Hello second client ", "How are you"]
+    #
+    #     for item in msgs:
+    #         msg = '{"msg": "%s"}' % item
+    #         first_client.send_str(msg)
 
         # msg = await second_client.receive()
         # print("Second client receive messages")

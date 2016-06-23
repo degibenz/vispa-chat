@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 __author__ = 'degibenz'
-import os
 import logging
 
 log = logging.getLogger(__name__)
@@ -22,6 +21,10 @@ from models.client import Client
 __all__ = [
     'ChatWS'
 ]
+
+DEBUG = True
+
+print("DEBUG :: ", DEBUG)
 
 
 class ChatWS(AbsView):
@@ -70,29 +73,37 @@ class ChatWS(AbsView):
             client_in_chat.save()
 
     async def prepare_msg(self):
-        if not self.ws.closed:
+        print("Wait for message in Chat :: {}".format(self.chat_pk))
+        if self.ws.closed:
+            print("websocket is closed")
+        else:
 
             msg = await self.ws.receive()
+
+            if DEBUG:
+                print("Get message\nclient :: {}\nmessage  ::  {}".format(self.client_pk, msg))
+
             if msg.tp == MsgType.text:
                 content = json.loads(msg.data)
 
                 system_operation = content.get('system_operation', None)
 
                 if system_operation == 'close':
-                    await self.close_chat(for_me=True)
+                    await self.close_chat(
+                        for_me=True
+                    )
 
                 else:
-                    data = json.loads(msg.data)
 
-                    receiver = data.get('receiver', None)
+                    receiver = content.get('receiver', None)
 
                     if receiver:
                         await self.check_receiver(receiver)
 
                     msg_obj = MessagesFromClientInChat(
-                        chat=self.chat.get('_id'),
+                        chat=self.chat_pk,
                         client=self.client_pk,
-                        msg=data.get('msg'),
+                        msg=content.get('msg'),
                         receiver_message=receiver
                     )
 
@@ -112,9 +123,6 @@ class ChatWS(AbsView):
 
         token_in_header = self.request.__dict__.get('headers').get('AUTHORIZATION', None)
 
-        # if not bool(os.getenv('IS_TEST')):
-        #     token_in_header = 'c97868d8-ccd5-43e4-914c-fe87e9438ec0'
-
         if not token_in_header:
             raise TokeInHeadersNotFound
         else:
@@ -125,9 +133,10 @@ class ChatWS(AbsView):
             if self.db:
                 client.db = self.db
 
+            if DEBUG:
+                print("Get client object :: {}".format(self.client_pk, ))
+
             self.client = await client.get()
-            if not self.client:
-                raise ObjectNotFound(cls_name=Client)
 
             if not str(await client.token) == str(token_in_header):
                 raise TokenIsNotFound
@@ -184,6 +193,7 @@ class ChatWS(AbsView):
 
     async def get(self):
         try:
+            print("Welcome to chat-server")
             chat = Chat(
                 pk=self.chat_pk
             )
@@ -191,13 +201,22 @@ class ChatWS(AbsView):
             if self.db:
                 chat.db = self.db
 
+            if DEBUG:
+                print("Get information about chat :: {}".format(self.chat_pk))
+
             self.chat = await chat.get()
 
             self.ws = web.WebSocketResponse()
 
             await self.ws.prepare(self.request)
 
+            if DEBUG:
+                print("Check client information :: {}".format(self.client_pk))
+
             await self.check_client()
+
+            if DEBUG:
+                print("Add client :: {} to chat :: {}".format(self.client_pk, self.chat_pk))
 
             client_in_room = ClientsInChatRoom(
                 chat=self.chat_pk,
@@ -209,6 +228,9 @@ class ChatWS(AbsView):
 
             await client_in_room.add_person_to_chat()
 
+            if DEBUG:
+                print("Add client to agents-list :: {}".format(self.client_pk))
+
             self.agents.append(
                 {
                     "client_uid": self.client_pk,
@@ -217,7 +239,12 @@ class ChatWS(AbsView):
                 }
             )
 
-            await asyncio.gather(self.prepare_msg())
+            if DEBUG:
+                print("prepare msg from client :: {} in chat :: {}".format(self.client_pk, self.chat_pk))
+
+            await asyncio.gather(
+                self.prepare_msg()
+            )
 
         except(Exception,) as error:
 
