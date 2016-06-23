@@ -74,7 +74,8 @@ class ChatWS(AbsView):
 
     async def prepare_msg(self):
         while True:
-            print("Wait for message in Chat :: {}".format(self.chat_pk))
+            if DEBUG:
+                print("Wait for message in Chat :: {}".format(self.chat_pk))
             if self.ws.closed:
                 print("websocket is closed")
             else:

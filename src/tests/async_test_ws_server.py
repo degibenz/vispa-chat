@@ -44,7 +44,7 @@ class TestChatApi(AioHTTPTestCase):
 
         self.database = DB()
         self.loop = asyncio.new_event_loop()
-        self.loop.set_debug(False)
+        # self.loop.set_debug(False)
         self.app = self.get_app(
             self.loop
         )
@@ -165,13 +165,11 @@ class TestChatApi(AioHTTPTestCase):
             headers=self.first_headers
         )
 
-        print(self.second_client)
-        print(self.second_token)
-
-        # assert request._closing is False
+        assert request.closed is False
         request.send_str(data='{"msg": "Hello"}')
+
         msg = await request.receive()
-        # print("Second client receive messages")
+        print("Second client receive messages")
         print(msg)
 
     # @unittest_run_loop

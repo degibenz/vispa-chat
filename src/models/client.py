@@ -101,17 +101,23 @@ class Token(Model):
             'client': ObjectId(self.client_uid)
         }
 
-        search_key = await self.get(**q)
+        search_key = None
+        key = None
 
-        if search_key:
-            key = "{}".format(search_key.get('token'))
-        else:
-            key = str(uuid.uuid4())
+        try:
 
-            await self.save(**{
-                'client': ObjectId(self.client_uid),
-                'token': "{}".format(key),
-                'create_at': datetime.datetime.now()
-            })
+            search_key = await self.get(**q)
 
-        return key
+        except(Exception,):
+            if search_key:
+                key = "{}".format(search_key.get('token'))
+            else:
+                key = str(uuid.uuid4())
+
+                await self.save(**{
+                    'client': ObjectId(self.client_uid),
+                    'token': "{}".format(key),
+                    'create_at': datetime.datetime.now()
+                })
+        finally:
+            return key
