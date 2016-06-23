@@ -132,7 +132,11 @@ class ClientsInChatRoom(Model):
 
         print("Add person to chat :: ", q)
 
-        if not await self.get(**q):
+        try:
+            await self.get(**q)
+        except(Exception,):
+            pass
+        finally:
             await self.save()
 
     async def save(self, **kwargs) -> dict:

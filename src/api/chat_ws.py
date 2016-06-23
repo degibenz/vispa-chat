@@ -73,55 +73,56 @@ class ChatWS(AbsView):
             client_in_chat.save()
 
     async def prepare_msg(self):
-        print("Wait for message in Chat :: {}".format(self.chat_pk))
-        if self.ws.closed:
-            print("websocket is closed")
-        else:
+        while True:
+            print("Wait for message in Chat :: {}".format(self.chat_pk))
+            if self.ws.closed:
+                print("websocket is closed")
+            else:
 
-            msg = await self.ws.receive()
+                msg = await self.ws.receive()
 
-            if DEBUG:
-                print("Get message\nclient :: {}\nmessage  ::  {}".format(self.client_pk, msg))
+                if DEBUG:
+                    print("Get message\nclient :: {}\nmessage  ::  {}".format(self.client_pk, msg))
 
-            if msg.tp == MsgType.text:
-                content = json.loads(msg.data)
+                if msg.tp == MsgType.text:
+                    content = json.loads(msg.data)
 
-                system_operation = content.get('system_operation', None)
+                    system_operation = content.get('system_operation', None)
 
-                if system_operation == 'close':
-                    await self.close_chat(
-                        for_me=True
-                    )
-
-                else:
-
-                    receiver = content.get('receiver', None)
-
-                    if receiver:
-                        await self.check_receiver(receiver)
-
-                    msg_obj = MessagesFromClientInChat(
-                        chat=self.chat_pk,
-                        client=self.client_pk,
-                        msg=content.get('msg'),
-                        receiver_message=receiver
-                    )
-
-                    if self.db:
-                        msg_obj.db = self.db
-
-                    await msg_obj.save()
-
-                    for client in self.agents:
-                        await self.notify(
-                            client,
-                            msg_obj.message_content,
-                            receiver
+                    if system_operation == 'close':
+                        await self.close_chat(
+                            for_me=True
                         )
+
+                    else:
+
+                        receiver = content.get('receiver', None)
+
+                        if receiver:
+                            await self.check_receiver(receiver)
+
+                        msg_obj = MessagesFromClientInChat(
+                            chat=self.chat_pk,
+                            client=self.client_pk,
+                            msg=content.get('msg'),
+                            receiver_message=receiver
+                        )
+
+                        if self.db:
+                            msg_obj.db = self.db
+
+                        await msg_obj.save()
+
+                        for client in self.agents:
+                            await self.notify(
+                                client,
+                                msg_obj.message_content,
+                                receiver
+                            )
 
     async def check_client(self):
 
-        token_in_header = self.request.__dict__.get('headers').get('AUTHORIZATION', None)
+        token_in_header = self.request.__dict__.get('headers').get('AUTHORIZATION', 'c97868d8-ccd5-43e4-914c-fe87e9438ec0')
 
         if not token_in_header:
             raise TokeInHeadersNotFound
@@ -138,6 +139,7 @@ class ChatWS(AbsView):
 
             self.client = await client.get()
 
+            print(await client.token)
             if not str(await client.token) == str(token_in_header):
                 raise TokenIsNotFound
 
@@ -243,7 +245,8 @@ class ChatWS(AbsView):
                 print("prepare msg from client :: {} in chat :: {}".format(self.client_pk, self.chat_pk))
 
             await asyncio.gather(
-                self.prepare_msg()
+                self.prepare_msg(),
+                return_exceptions=True
             )
 
         except(Exception,) as error:

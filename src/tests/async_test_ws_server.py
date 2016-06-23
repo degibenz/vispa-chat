@@ -165,11 +165,13 @@ class TestChatApi(AioHTTPTestCase):
             headers=self.first_headers
         )
 
-        assert request._closing is False
+        print(self.second_client)
+        print(self.second_token)
 
+        # assert request._closing is False
         request.send_str(data='{"msg": "Hello"}')
         msg = await request.receive()
-        print("Second client receive messages")
+        # print("Second client receive messages")
         print(msg)
 
     # @unittest_run_loop
