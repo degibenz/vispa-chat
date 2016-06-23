@@ -78,6 +78,8 @@ class Model(object):
                 'error': '%s' % error
             }
 
+            access_logger.error("%s" % self.result)
+
         finally:
             return self.result
 

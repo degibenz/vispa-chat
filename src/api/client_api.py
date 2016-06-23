@@ -91,7 +91,7 @@ class AuthClient(web.View):
             "password": client.password
         }
 
-        client_exit = await client.objects.find_one(q)
+        client_exit = await client.get(**q)
 
         if client_exit:
             client.pk = client_exit.get('_id')

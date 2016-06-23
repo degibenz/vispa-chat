@@ -6,6 +6,7 @@ import uuid
 
 import datetime
 from core.model import Model, ObjectId
+from core.exceptions import ObjectNotFound
 
 __all__ = [
     'Client',
@@ -98,26 +99,20 @@ class Token(Model):
         assert self.client_uid is not None
 
         q = {
-            'client': ObjectId(self.client_uid)
+            'client': self.client_uid
         }
 
-        search_key = None
-        key = None
+        search_key = await self.objects.find_one(q)
 
-        try:
+        if search_key:
+            token = "{}".format(search_key.get('token'))
+        else:
+            token = str(uuid.uuid4())
 
-            search_key = await self.get(**q)
+            await self.save(**{
+                'client': ObjectId(self.client_uid),
+                'token': "{}".format(token),
+                'create_at': self.create_at.now()
+            })
 
-        except(Exception,):
-            if search_key:
-                key = "{}".format(search_key.get('token'))
-            else:
-                key = str(uuid.uuid4())
-
-                await self.save(**{
-                    'client': ObjectId(self.client_uid),
-                    'token': "{}".format(key),
-                    'create_at': datetime.datetime.now()
-                })
-        finally:
-            return key
+        return token
