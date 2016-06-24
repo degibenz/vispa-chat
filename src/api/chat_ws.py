@@ -54,6 +54,11 @@ class ChatWS(web.View):
         super(web.View, self).__init__(request)
 
     async def check_receiver(self, receiver: ObjectId):
+        """
+        Метод проверяет, что получатель существует и находится в чате с отправителем.
+
+        :param receiver: индификатор получателя
+        """
         client = Client(
             pk=ObjectId(receiver)
         )
@@ -119,13 +124,19 @@ class ChatWS(web.View):
                             )
 
     async def check_client(self):
-
+        """
+            Метод для проверяет, что данный пользователь авторизован и что он это он.
+            Ищем пользователя по указанному ID в строке URL
+            Затем, находтим его token и сравниваем с тем, что указан в заголовке запроса
+            Если токены не совпадают - произойдет ошибка
+        """
         token_in_header = self.request.__dict__.get('headers').get('AUTHORIZATION',
                                                                    'c97868d8-ccd5-43e4-914c-fe87e9438ec0')
 
         if not token_in_header:
             raise TokeInHeadersNotFound
         else:
+
             client = Client(
                 pk=self.client_pk
             )
@@ -133,15 +144,19 @@ class ChatWS(web.View):
             if self.db:
                 client.db = self.db
 
-            if DEBUG:
-                print("Get client object :: {}".format(self.client_pk, ))
-
             self.client = await client.get()
 
             if not str(await client.token) == str(token_in_header):
                 raise TokenIsNotFound
 
     async def notify(self, item: dict, message: str, receiver: ObjectId = None):
+        """
+        Метод для рассылки сообщений всем участникам или выбранному пользователю в чате
+
+        :param item: dict-объект хранящий в себе данные об ID отправителе и его socket
+        :param message: текст сообщения
+        :param receiver: индификатор пользователя, который должен получить это сообщение
+        """
 
         async def _notify():
             socket = item.get('socket')
@@ -162,7 +177,6 @@ class ChatWS(web.View):
         await _notify()
 
     async def _del_it(self, item):
-        print("Mark client :: {} in chat :: {} as offline".format(self.client_pk, self.chat_pk))
 
         q = {
             'chat': self.chat_pk,
