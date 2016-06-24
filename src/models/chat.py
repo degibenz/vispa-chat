@@ -143,12 +143,15 @@ class ClientsInChatRoom(Model):
         result = dict
         try:
 
-            data = {
-                'chat': self.chat,
-                'client': self.client,
-                'join_at': self.join_at.now(),
-                'online': self.online,
-            }
+            if not kwargs:
+                data = {
+                    'chat': self.chat,
+                    'client': self.client,
+                    'join_at': self.join_at.now(),
+                    'online': self.online,
+                }
+            else:
+                data = kwargs
 
             result = await super(ClientsInChatRoom, self).save(**data)
         except(Exception, AssertionError) as error:

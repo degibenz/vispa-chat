@@ -6,7 +6,6 @@ import uuid
 
 import datetime
 from core.model import Model, ObjectId
-from core.exceptions import ObjectNotFound
 
 __all__ = [
     'Client',

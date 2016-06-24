@@ -11,7 +11,7 @@ import asyncio
 
 from aiohttp import web, MsgType
 
-from core.api import AbsView
+from aiohttp import web
 from core.model import ObjectId
 from core.exceptions import *
 
@@ -27,8 +27,9 @@ DEBUG = True
 print("DEBUG :: ", DEBUG)
 
 
-class ChatWS(AbsView):
+class ChatWS(web.View):
     ws = None
+    response = None
 
     chat = None
     client = None
@@ -38,7 +39,10 @@ class ChatWS(AbsView):
     db = None
     agents = []
 
+    client_in_chat = None
+
     def __init__(self, request):
+
         try:
             self.db = request.app['db']
         except(KeyError,):
@@ -47,7 +51,7 @@ class ChatWS(AbsView):
         self.chat_pk = ObjectId(request.match_info.get('id'))
         self.client_pk = ObjectId(request.match_info.get('client'))
 
-        super(AbsView, self).__init__(request)
+        super(web.View, self).__init__(request)
 
     async def check_receiver(self, receiver: ObjectId):
         client = Client(
@@ -59,27 +63,20 @@ class ChatWS(AbsView):
 
         await client.get()
 
-        client_in_chat = ClientsInChatRoom()
-
-        if self.db:
-            client_in_chat.db = self.db
-
         q = {
             'chat': self.chat_pk,
             'client': ObjectId(receiver)
         }
 
-        if not await client_in_chat.get(**q):
-            client_in_chat.save()
+        if not await self.client_in_chat.get(**q):
+            self.client_in_chat.save(**q)
 
     async def prepare_msg(self):
         while True:
             if DEBUG:
                 print("Wait for message in Chat :: {}".format(self.chat_pk))
-            if self.ws.closed:
-                print("websocket is closed")
-            else:
 
+            if not self.ws.closed:
                 msg = await self.ws.receive()
 
                 if DEBUG:
@@ -123,7 +120,8 @@ class ChatWS(AbsView):
 
     async def check_client(self):
 
-        token_in_header = self.request.__dict__.get('headers').get('AUTHORIZATION', 'c97868d8-ccd5-43e4-914c-fe87e9438ec0')
+        token_in_header = self.request.__dict__.get('headers').get('AUTHORIZATION',
+                                                                   'c97868d8-ccd5-43e4-914c-fe87e9438ec0')
 
         if not token_in_header:
             raise TokeInHeadersNotFound
@@ -140,11 +138,10 @@ class ChatWS(AbsView):
 
             self.client = await client.get()
 
-            print(await client.token)
             if not str(await client.token) == str(token_in_header):
                 raise TokenIsNotFound
 
-    async def notify(self, item: dict, message: str, receiver=None):
+    async def notify(self, item: dict, message: str, receiver: ObjectId = None):
 
         async def _notify():
             socket = item.get('socket')
@@ -167,17 +164,12 @@ class ChatWS(AbsView):
     async def _del_it(self, item):
         print("Mark client :: {} in chat :: {} as offline".format(self.client_pk, self.chat_pk))
 
-        client_in_chat = ClientsInChatRoom()
-
         q = {
             'chat': self.chat_pk,
             'client': self.client_pk
         }
 
-        if self.db:
-            client_in_chat.db = self.db
-
-        await client_in_chat.objects.update(
+        await self.client_in_chat.objects.update(
             q,
             {'$set': {'online': False}},
             upsert=False
@@ -209,10 +201,6 @@ class ChatWS(AbsView):
 
             self.chat = await chat.get()
 
-            self.ws = web.WebSocketResponse()
-
-            await self.ws.prepare(self.request)
-
             if DEBUG:
                 print("Check client information :: {}".format(self.client_pk))
 
@@ -221,15 +209,15 @@ class ChatWS(AbsView):
             if DEBUG:
                 print("Add client :: {} to chat :: {}".format(self.client_pk, self.chat_pk))
 
-            client_in_room = ClientsInChatRoom(
+            self.client_in_chat = ClientsInChatRoom(
                 chat=self.chat_pk,
                 client=self.client_pk,
             )
 
             if self.db:
-                client_in_room.db = self.db
+                self.client_in_chat.db = self.db
 
-            await client_in_room.add_person_to_chat()
+            await self.client_in_chat.add_person_to_chat()
 
             if DEBUG:
                 print("Add client to agents-list :: {}".format(self.client_pk))
@@ -242,6 +230,9 @@ class ChatWS(AbsView):
                 }
             )
 
+            self.ws = web.WebSocketResponse()
+            await self.ws.prepare(self.request)
+
             if DEBUG:
                 print("prepare msg from client :: {} in chat :: {}".format(self.client_pk, self.chat_pk))
 
@@ -251,7 +242,6 @@ class ChatWS(AbsView):
             )
 
         except(Exception,) as error:
-
             self.response = {
                 'status': False,
                 'error': "{}".format(error)
