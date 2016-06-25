@@ -5,9 +5,11 @@ __author__ = 'degibenz'
 from aiohttp.log import *
 
 from aiohttp import web
+
 from core.exceptions import *
 from core.middleware import check_auth
-from core.api import json_response
+from aiohttp.web import json_response
+
 from models.chat import *
 
 __all__ = [
@@ -107,15 +109,12 @@ class DeleteChat(web.View):
         try:
             chat_is = await chat.get()
 
-            if not chat_is:
-                raise ObjectNotFound
+            if not chat_is.get('author') == self.request.client.get('_id'):
+                raise NotPermissions
             else:
-                if not chat_is.get('author') == self.request.client.get('_id'):
-                    raise NotPermissions
-                else:
-                    response = {
-                        'status': True,
-                    }
+                response = {
+                    'status': True,
+                }
         except(Exception,) as error:
             response = {
                 'status': False,

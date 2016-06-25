@@ -2,9 +2,9 @@
 __author__ = 'degibenz'
 
 from functools import wraps
-from models.client import Token, Client
-from core.api import json_response
+from aiohttp.web import json_response
 
+from models.client import Token, Client
 from core.exceptions import *
 
 __all__ = [

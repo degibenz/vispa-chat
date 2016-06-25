@@ -7,11 +7,9 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 import json
-import asyncio
 
 from aiohttp import web, MsgType
 
-from aiohttp import web
 from core.model import ObjectId
 from core.exceptions import *
 
@@ -23,8 +21,6 @@ __all__ = [
 ]
 
 DEBUG = True
-
-print("DEBUG :: ", DEBUG)
 
 
 class ChatWS(web.View):
@@ -48,8 +44,8 @@ class ChatWS(web.View):
         except(KeyError,):
             pass
 
-        self.chat_pk = ObjectId(request.match_info.get('id'))
-        self.client_pk = ObjectId(request.match_info.get('client'))
+        self.chat_pk = request.match_info.get('id')
+        self.client_pk = request.match_info.get('client')
 
         super(web.View, self).__init__(request)
 
@@ -77,51 +73,45 @@ class ChatWS(web.View):
             self.client_in_chat.save(**q)
 
     async def prepare_msg(self):
-        while True:
-            if DEBUG:
-                print("Wait for message in Chat :: {}".format(self.chat_pk))
+        while not self.ws.closed:
+            msg = await self.ws.receive()
 
-            if not self.ws.closed:
-                msg = await self.ws.receive()
+            if msg.tp == MsgType.text:
+                content = json.loads(msg.data)
 
-                if DEBUG:
-                    print("Get message\nclient :: {}\nmessage  ::  {}".format(self.client_pk, msg))
+                system_operation = content.get('system_operation', None)
 
-                if msg.tp == MsgType.text:
-                    content = json.loads(msg.data)
+                if system_operation == 'close':
 
-                    system_operation = content.get('system_operation', None)
+                    await self.close_chat(
+                        for_me=True
+                    )
 
-                    if system_operation == 'close':
-                        await self.close_chat(
-                            for_me=True
+                else:
+
+                    receiver = content.get('receiver', None)
+
+                    if receiver:
+                        await self.check_receiver(receiver)
+
+                    msg_obj = MessagesFromClientInChat(
+                        chat=self.chat_pk,
+                        client=self.client_pk,
+                        msg=content.get('msg'),
+                        receiver_message=receiver
+                    )
+
+                    if self.db:
+                        msg_obj.db = self.db
+
+                    await msg_obj.save()
+
+                    for client in self.agents:
+                        await self.notify(
+                            client,
+                            msg_obj.message_content,
+                            receiver
                         )
-
-                    else:
-
-                        receiver = content.get('receiver', None)
-
-                        if receiver:
-                            await self.check_receiver(receiver)
-
-                        msg_obj = MessagesFromClientInChat(
-                            chat=self.chat_pk,
-                            client=self.client_pk,
-                            msg=content.get('msg'),
-                            receiver_message=receiver
-                        )
-
-                        if self.db:
-                            msg_obj.db = self.db
-
-                        await msg_obj.save()
-
-                        for client in self.agents:
-                            await self.notify(
-                                client,
-                                msg_obj.message_content,
-                                receiver
-                            )
 
     async def check_client(self):
         """
@@ -130,8 +120,7 @@ class ChatWS(web.View):
             Затем, находтим его token и сравниваем с тем, что указан в заголовке запроса
             Если токены не совпадают - произойдет ошибка
         """
-        token_in_header = self.request.__dict__.get('headers').get('AUTHORIZATION',
-                                                                   'c97868d8-ccd5-43e4-914c-fe87e9438ec0')
+        token_in_header = self.request.__dict__.get('headers').get('AUTHORIZATION', None)
 
         if not token_in_header:
             raise TokeInHeadersNotFound
@@ -149,7 +138,7 @@ class ChatWS(web.View):
             if not str(await client.token) == str(token_in_header):
                 raise TokenIsNotFound
 
-    async def notify(self, item: dict, message: str, receiver: ObjectId = None):
+    async def notify(self, item: dict, message: str, receiver: ObjectId=None):
         """
         Метод для рассылки сообщений всем участникам или выбранному пользователю в чате
 
@@ -168,7 +157,13 @@ class ChatWS(web.View):
                     )
 
             except(Exception,) as error:
-                log.error("notify :: {}".format(error))
+                error_info = {
+                    'action': 'notify',
+                    'data': item,
+                    'receiver': receiver,
+                    'error': '{}'.format(error)
+                }
+                log.error(error_info)
 
         if receiver:
             if item.get('client_uid') == receiver:
@@ -202,26 +197,29 @@ class ChatWS(web.View):
 
     async def get(self):
         try:
-            print("Welcome to chat-server")
-            chat = Chat(
-                pk=self.chat_pk
-            )
+            #   Инициализируем сокеты
+            self.ws = web.WebSocketResponse()
+            await self.ws.prepare(self.request)
 
+            #   Скармливаем полученные chat-id, client-id в ObjectId.
+            #   Проверяем что формат этих данных валиден
+            #   В случае, если данные не валидные - кинется ошибка.
+            self.chat_pk = ObjectId(self.chat_pk)
+            self.client_pk = ObjectId(self.client_pk)
+
+            #   Инициализируем объект Чата
+            chat = Chat(pk=self.chat_pk)
+
+            #   Если в нашем классе поле с базой данных не пустое, то испольуем эту БД
             if self.db:
                 chat.db = self.db
 
-            if DEBUG:
-                print("Get information about chat :: {}".format(self.chat_pk))
-
+            #   Получаем чат изи БД.
+            #   Если его нет - произойдет ошибка ObjectNotFound
             self.chat = await chat.get()
 
-            if DEBUG:
-                print("Check client information :: {}".format(self.client_pk))
-
+            #   Проверяем клиента, котоырй послыает запрос
             await self.check_client()
-
-            if DEBUG:
-                print("Add client :: {} to chat :: {}".format(self.client_pk, self.chat_pk))
 
             self.client_in_chat = ClientsInChatRoom(
                 chat=self.chat_pk,
@@ -231,10 +229,8 @@ class ChatWS(web.View):
             if self.db:
                 self.client_in_chat.db = self.db
 
+            #   После всех проверок мы смело добавляем клиента в чат.
             await self.client_in_chat.add_person_to_chat()
-
-            if DEBUG:
-                print("Add client to agents-list :: {}".format(self.client_pk))
 
             self.agents.append(
                 {
@@ -244,16 +240,8 @@ class ChatWS(web.View):
                 }
             )
 
-            self.ws = web.WebSocketResponse()
-            await self.ws.prepare(self.request)
-
-            if DEBUG:
-                print("prepare msg from client :: {} in chat :: {}".format(self.client_pk, self.chat_pk))
-
-            await asyncio.gather(
-                self.prepare_msg(),
-                return_exceptions=True
-            )
+            #   Обрабатываем сообщения - получаем/пересылаем
+            await self.prepare_msg()
 
         except(Exception,) as error:
             self.response = {
@@ -271,7 +259,7 @@ class ChatWS(web.View):
                 message="{}".format(self.response)
             )
 
-            await self.close_chat()
+            await self.close_chat(for_me=True)
 
         finally:
             return self.ws

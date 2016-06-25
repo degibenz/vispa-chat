@@ -167,10 +167,11 @@ class TestChatApi(AioHTTPTestCase):
 
         assert request.closed is False
 
-        msg = await request.receive()
-        print(msg)
-
         request.send_str(data='{"msg": "Hello"}')
+        request.send_str(data='{"system_operation" : "close"}')
+        # await request.close()
+        # print(request.closed)
+        # assert request.closed is True
 
     # @unittest_run_loop
     # async def test_send_message(self):

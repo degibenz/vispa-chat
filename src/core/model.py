@@ -56,7 +56,9 @@ class Model(object):
         except(Exception, AssertionError) as error:
             self.result = {
                 'status': False,
-                'error': '%s' % error
+                'error': '%s' % error,
+                'model': "{}".format(self.__class__.__name__),
+                'action': 'get'
             }
 
             access_logger.error("%s" % self.result)
@@ -66,6 +68,7 @@ class Model(object):
 
     async def save(self, **kwargs) -> dict:
         try:
+            print(kwargs)
             self.result = await self.objects.insert(
                 kwargs
             )
@@ -75,7 +78,9 @@ class Model(object):
         except(Exception,) as error:
             self.result = {
                 'status': False,
-                'error': '%s' % error
+                'error': '%s' % error,
+                'model': "{}".format(self.__class__.__name__),
+                'action': 'save'
             }
 
             access_logger.error("%s" % self.result)
@@ -101,7 +106,9 @@ class Model(object):
         except(Exception, AssertionError) as error:
             self.result = {
                 'status': False,
-                'error': '%s' % error
+                'error': '%s' % error,
+                'model': "{}".format(self.__class__.__name__),
+                'action': 'delete'
             }
 
         finally:

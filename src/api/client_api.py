@@ -2,8 +2,7 @@
 
 __author__ = 'degibenz'
 from aiohttp import web
-
-from core.api import json_response
+from aiohttp.web import json_response
 
 from models.client import Client, ObjectId
 from core.middleware import check_auth
