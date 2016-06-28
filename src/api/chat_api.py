@@ -45,8 +45,6 @@ class GetChat(web.View):
                 'error': 'chat not found'
             }
 
-        access_logger.log("%s" % response)
-
         return json_response(
             response
         )

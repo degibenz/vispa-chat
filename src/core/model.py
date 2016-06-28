@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 __author__ = 'degibenz'
+import traceback
 import os
 import asyncio
 
@@ -37,18 +38,13 @@ class Model(object):
             self.db = database(loop=self.loop)
 
     async def get(self, **kwargs) -> dict:
-
+        q = None
         try:
-            if self.pk:
-                self.result = await self.objects.find_one(
-                    {
-                        "_id": ObjectId(self.pk)
-                    }
-                )
-            else:
-                self.result = await self.objects.find_one(
-                    kwargs
-                )
+            q = {"_id": ObjectId(self.pk)} if self.pk else kwargs
+
+            self.result = await self.objects.find_one(
+                q
+            )
 
             if not self.result:
                 raise ObjectNotFound(cls_name=self.__class__.__name__)
@@ -58,7 +54,8 @@ class Model(object):
                 'status': False,
                 'error': '%s' % error,
                 'model': "{}".format(self.__class__.__name__),
-                'action': 'get'
+                'action': 'get',
+                'query': q
             }
 
             access_logger.error("%s" % self.result)
@@ -68,7 +65,6 @@ class Model(object):
 
     async def save(self, **kwargs) -> dict:
         try:
-            print(kwargs)
             self.result = await self.objects.insert(
                 kwargs
             )

@@ -112,8 +112,8 @@ class Chat(Model):
 class ClientsInChatRoom(Model):
     collection = 'clients_in_chat'
 
-    chat = Chat
-    client = Client
+    chat = ObjectId
+    client = ObjectId
     join_at = datetime.datetime
 
     online = True
@@ -131,23 +131,18 @@ class ClientsInChatRoom(Model):
             'client': ObjectId(self.client),
         }
 
-        try:
-            await self.get(**q)
-        except(Exception,):
+        result = await self.get(**q)
+        if result.get('status') is False:
             await self.save()
 
     async def save(self, **kwargs) -> dict:
         try:
-
-            if not kwargs:
-                data = {
-                    'chat': self.chat,
-                    'client': self.client,
-                    'join_at': self.join_at.now(),
-                    'online': self.online,
-                }
-            else:
-                data = kwargs
+            data = {
+                'chat': self.chat,
+                'client': self.client,
+                'join_at': self.join_at.now(),
+                'online': self.online,
+            } if not kwargs else kwargs
 
             self.result = await super(ClientsInChatRoom, self).save(**data)
         except(Exception, AssertionError) as error:

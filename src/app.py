@@ -28,6 +28,7 @@ def app(loop):
     app_server.router.add_route('POST', '/chat/create/', CreateChat)
     app_server.router.add_route('POST', '/chat/delete/', DeleteChat)
 
-    app_server.router.add_route('GET', '/chat/ws/{id}/{client}/', ChatWS)
+    app_server.router.add_route('GET', '/chat/ws/{id}/', ChatWS)
+    app_server['websockets'] = []
 
     return app_server

@@ -8,13 +8,13 @@ log.setLevel(logging.DEBUG)
 
 import json
 
-from aiohttp import web, MsgType
+from aiohttp import web
 
 from core.model import ObjectId
 from core.exceptions import *
 
 from models.chat import *
-from models.client import Client
+from models.client import Client, Token
 
 __all__ = [
     'ChatWS'
@@ -26,28 +26,24 @@ DEBUG = True
 class ChatWS(web.View):
     ws = None
     response = None
-
     chat = None
     client = None
 
     chat_pk = None
     client_pk = None
     db = None
-    agents = []
 
     client_in_chat = None
 
     def __init__(self, request):
-
         try:
             self.db = request.app['db']
         except(KeyError,):
             pass
 
         self.chat_pk = request.match_info.get('id')
-        self.client_pk = request.match_info.get('client')
 
-        super(web.View, self).__init__(request)
+        super(ChatWS, self).__init__(request)
 
     async def check_receiver(self, receiver: ObjectId):
         """
@@ -73,105 +69,87 @@ class ChatWS(web.View):
             self.client_in_chat.save(**q)
 
     async def prepare_msg(self):
-        while not self.ws.closed:
-            msg = await self.ws.receive()
+        async for msg in self.socket:
+            content = json.loads(msg.data)
 
-            if msg.tp == MsgType.text:
-                content = json.loads(msg.data)
+            receiver = content.get('receiver', None)
 
-                system_operation = content.get('system_operation', None)
+            if receiver:
+                await self.check_receiver(receiver)
 
-                if system_operation == 'close':
+                receiver = ObjectId(receiver)
 
-                    await self.close_chat(
-                        for_me=True
-                    )
+            msg_obj = MessagesFromClientInChat(
+                chat=self.chat_pk,
+                client=self.client_pk,
+                msg=content.get('msg'),
+                receiver_message=receiver
+            )
 
-                else:
+            if self.db:
+                msg_obj.db = self.db
 
-                    receiver = content.get('receiver', None)
+            await msg_obj.save()
 
-                    if receiver:
-                        await self.check_receiver(receiver)
-
-                    msg_obj = MessagesFromClientInChat(
-                        chat=self.chat_pk,
-                        client=self.client_pk,
-                        msg=content.get('msg'),
-                        receiver_message=receiver
-                    )
-
-                    if self.db:
-                        msg_obj.db = self.db
-
-                    await msg_obj.save()
-
-                    for client in self.agents:
-                        await self.notify(
-                            client,
-                            msg_obj.message_content,
-                            receiver
-                        )
+            for item in self.agents:
+                await self.notify(
+                    sender=item.get('client_uid'),
+                    message=msg_obj.message_content,
+                    socket=item.get('socket'),
+                    receiver=receiver,
+                )
 
     async def check_client(self):
-        """
-            Метод для проверяет, что данный пользователь авторизован и что он это он.
-            Ищем пользователя по указанному ID в строке URL
-            Затем, находтим его token и сравниваем с тем, что указан в заголовке запроса
-            Если токены не совпадают - произойдет ошибка
-        """
         token_in_header = self.request.__dict__.get('headers').get('AUTHORIZATION', None)
 
         if not token_in_header:
             raise TokeInHeadersNotFound
         else:
-
-            client = Client(
-                pk=self.client_pk
-            )
+            token = Token()
+            token.token = token_in_header
 
             if self.db:
-                client.db = self.db
+                token.db = self.db
 
-            self.client = await client.get()
+            self.client = await token.find_client_by_key()
 
-            if not str(await client.token) == str(token_in_header):
+            if not self.client:
                 raise TokenIsNotFound
+            self.client_pk = ObjectId(self.client.get('client'))
 
-    async def notify(self, item: dict, message: str, receiver: ObjectId=None):
+    async def notify(self, sender: ObjectId, message: str, socket: web.WebSocketResponse, receiver: ObjectId = None, ):
         """
         Метод для рассылки сообщений всем участникам или выбранному пользователю в чате
 
-        :param item: dict-объект хранящий в себе данные об ID отправителе и его socket
+        :param sender:
+        :param socket:
         :param message: текст сообщения
         :param receiver: индификатор пользователя, который должен получить это сообщение
         """
 
         async def _notify():
-            socket = item.get('socket')
-
             try:
                 if not socket.closed:
-                    await socket.send_str(
+                    socket.send_str(
                         data="{}".format(message)
                     )
 
             except(Exception,) as error:
                 error_info = {
                     'action': 'notify',
-                    'data': item,
                     'receiver': receiver,
+                    'sender': sender,
                     'error': '{}'.format(error)
                 }
+
                 log.error(error_info)
 
         if receiver:
-            if item.get('client_uid') == receiver:
-                message = "@{}: {}".format(receiver, message)
+            message = "@{}: {}".format(receiver, message)
 
         await _notify()
 
-    async def _del_it(self, item):
+    async def mark_client_as_offline(self):
 
         q = {
             'chat': self.chat_pk,
@@ -180,45 +158,43 @@ class ChatWS(web.View):
 
         await self.client_in_chat.objects.update(
             q,
-            {'$set': {'online': False}},
+            {'$set':
+                 {'online': False}
+             },
             upsert=False
         )
 
-        await item.get('socket').close()
-        self.agents.remove(item)
+    @property
+    def socket(self):
+        for item in self.agents:
+            if item.get('client_uid') == self.client_pk:
+                return item.get('socket')
 
-    async def close_chat(self, for_me=False):
-        for item in self.agents[:]:
-            if for_me:
-                if item.get('chat_uid') == self.chat_pk and item.get('client_uid') == self.client_pk:
-                    await self._del_it(item)
-            else:
-                await self._del_it(item)
+    @property
+    def agents(self):
+        result = []
+        for ws in self.request.app['websockets']:
+            if ws.get('chat_uid') == self.chat_pk:
+                result.append(ws)
+
+        return result
 
     async def get(self):
         try:
-            #   Инициализируем сокеты
             self.ws = web.WebSocketResponse()
             await self.ws.prepare(self.request)
 
-            #   Скармливаем полученные chat-id, client-id в ObjectId.
-            #   Проверяем что формат этих данных валиден
-            #   В случае, если данные не валидные - кинется ошибка.
             self.chat_pk = ObjectId(self.chat_pk)
-            self.client_pk = ObjectId(self.client_pk)
 
-            #   Инициализируем объект Чата
-            chat = Chat(pk=self.chat_pk)
+            chat = Chat(
+                pk=self.chat_pk
+            )
 
-            #   Если в нашем классе поле с базой данных не пустое, то испольуем эту БД
             if self.db:
                 chat.db = self.db
 
-            #   Получаем чат изи БД.
-            #   Если его нет - произойдет ошибка ObjectNotFound
             self.chat = await chat.get()
 
-            #   Проверяем клиента, котоырй послыает запрос
             await self.check_client()
 
             self.client_in_chat = ClientsInChatRoom(
@@ -229,18 +205,17 @@ class ChatWS(web.View):
             if self.db:
                 self.client_in_chat.db = self.db
 
-            #   После всех проверок мы смело добавляем клиента в чат.
             await self.client_in_chat.add_person_to_chat()
 
-            self.agents.append(
-                {
-                    "client_uid": self.client_pk,
-                    "chat_uid": self.chat_pk,
-                    "socket": self.ws
-                }
-            )
+            self.request.app['websockets'].append({
+                "socket": self.ws,
+                "client_uid": self.client_pk,
+                'chat_uid': self.chat_pk
+            })
 
-            #   Обрабатываем сообщения - получаем/пересылаем
+            for _ws in self.agents:
+                _ws.get('socket').send_str('%s joined' % self.client_pk)
+
             await self.prepare_msg()
 
         except(Exception,) as error:
@@ -249,17 +224,8 @@ class ChatWS(web.View):
                 'error': "{}".format(error)
             }
 
-            data = {
-                'client_uid': self.client_pk,
-                'socket': self.ws
-            }
-
-            await self.notify(
-                item=data,
-                message="{}".format(self.response)
-            )
-
-            await self.close_chat(for_me=True)
+            log.error(self.response)
+            await self.ws.close()
 
         finally:
             return self.ws

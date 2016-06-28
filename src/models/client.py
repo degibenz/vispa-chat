@@ -115,3 +115,10 @@ class Token(Model):
             })
 
         return token
+
+    async def find_client_by_key(self):
+        return await self.objects.find_one(
+            {
+                'token': self.token
+            }
+        )
