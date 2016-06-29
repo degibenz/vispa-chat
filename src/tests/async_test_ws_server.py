@@ -176,8 +176,6 @@ class TestChatApi(AioHTTPTestCase):
         await request.close()
         assert request.closed is True
 
-
-
     @unittest_run_loop
     async def test_chat_btw_users(self):
         print("========================")
@@ -309,3 +307,5 @@ class TestChatApi(AioHTTPTestCase):
         )
 
         result = await request.json()
+
+        assert result.get('status') is True
